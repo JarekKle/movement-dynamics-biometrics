@@ -1,20 +1,27 @@
+import math
+import sys
+
 import cv2
 import numpy as np
-from pykinect2 import PyKinectV2, PyKinectRuntime
+from PyQt6.QtWidgets import QApplication
 
-kinect = PyKinectRuntime.PyKinectRuntime(PyKinectV2.FrameSourceTypes_Depth)
+from pykinect2 import PyKinectV2
+from pykinect2 import PyKinectRuntime
 
-while True:
-    if kinect.has_new_depth_frame():
-        depth_frame = kinect.get_last_depth_frame()
-        depth_frame = depth_frame.reshape((424, 512))
-        depth_8bit = (depth_frame / 4500.0 * 255).clip(0, 255).astype(np.uint8)
-        depth_color = cv2.applyColorMap(depth_8bit, cv2.COLORMAP_HOT)
-        cv2.imshow('Depth Camera', depth_color)
+from Movement.bones import Bones
+from Movement.joint_name import JointName
+from Sources.kinect_source import KinectSource
+from Windows.app_manager import AppManager
 
-    if cv2.waitKey(1):
-        if 0xFF == ord('q'):
-            break
+def start_kinect():
+    kinect = KinectSource()
+    kinect.open()
 
-kinect.close()
-cv2.destroyAllWindows()
+def start_window():
+    app = QApplication(sys.argv)
+    window = AppManager()
+    window.show()
+    window.showMaximized()
+    app.exec()
+if __name__ == "__main__":
+    start_window()
