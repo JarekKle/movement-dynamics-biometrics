@@ -2,7 +2,7 @@ from enum import IntEnum
 from pykinect2 import PyKinectV2
 
 
-class JointName(IntEnum):
+class KinectJoints(IntEnum):
     SPINE_BASE = PyKinectV2.JointType_SpineBase
     SPINE_MID = PyKinectV2.JointType_SpineMid
     NECK = PyKinectV2.JointType_Neck
@@ -35,4 +35,4 @@ class JointName(IntEnum):
 
     @staticmethod
     def get_joints():
-        return [e for e in JointName]
+        return [e for e in KinectJoints]
