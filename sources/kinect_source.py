@@ -5,10 +5,10 @@ import math
 import cv2
 from pykinect2 import PyKinectRuntime, PyKinectV2
 
-from Movement.angles import Angles
-from Movement.bones import Bones
-from Movement.joint_name import JointName
-from Sources.isource import ISource
+from movement.angles import Angles
+from movement.bones import Bones
+from movement.kinect_joints import KinectJoints
+from sources.isource import ISource
 import numpy as np
 
 
@@ -61,14 +61,14 @@ class KinectSource(ISource):
         if not self.is_opened() or not self.is_running():
             return None
         if self._kinect.has_new_body_frame():
-            return self._kinect.get_last_body_frame()
+            self._last_body_frame = self._kinect.get_last_body_frame()
         return None
 
     def read_color(self):
         if not self.is_opened() or not self.is_running():
             return None
         if self._kinect.has_new_color_frame():
-            return self._kinect.get_last_color_frame()
+            self._last_color_frame = self._kinect.get_last_color_frame()
         return None
 
 
@@ -78,14 +78,17 @@ class KinectSource(ISource):
 
         bones = Bones.get_bones()
         frame = np.zeros((1080, 1920, 3), dtype=np.uint8)
-        body_frame = self.read_body()
-        color_frame = self.read_color()
+        self.read_body()
+        self.read_color()
+        body_frame = self._last_body_frame
+        color_frame = self._last_color_frame
 
         # COLOR FRAME
         if color_frame is not None:
-            self._last_color_frame = color_frame
             frame = color_frame.reshape((1080, 1920, 4))
             frame = cv2.cvtColor(frame, cv2.COLOR_BGRA2BGR)
+
+
 
         # BODY FRAME
         if body_frame is not None:
@@ -149,7 +152,7 @@ class KinectSource(ISource):
                     continue
                 joints = body.joints
 
-                for joint in JointName.get_joints():
+                for joint in KinectJoints.get_joints():
                     x = joints[joint].Position.x
                     y = joints[joint].Position.y
                     z = joints[joint].Position.z
@@ -158,9 +161,9 @@ class KinectSource(ISource):
     def normalize_joints_by_shoulder_distance(self, joints = None):
         if not self.is_opened() or not self.is_running():
             return
-        base = self._joint_cords.get(JointName.SPINE_BASE)
-        shoulder_left = self._joint_cords.get(JointName.SHOULDER_LEFT)
-        shoulder_right = self._joint_cords.get(JointName.SHOULDER_RIGHT)
+        base = self._joint_cords.get(KinectJoints.SPINE_BASE)
+        shoulder_left = self._joint_cords.get(KinectJoints.SHOULDER_LEFT)
+        shoulder_right = self._joint_cords.get(KinectJoints.SHOULDER_RIGHT)
 
         if base is None or shoulder_left is None or shoulder_right is None:
             return

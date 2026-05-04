@@ -11,7 +11,7 @@ from PyQt6.QtWidgets import QStackedWidget, QWidget, QVBoxLayout, QLabel, QHBoxL
 from PyQt6 import QtCore
 from PyQt6.QtWidgets import QWidget, QPushButton, QVBoxLayout, QLabel
 
-from Movement.joint_name import JointName
+from movement.kinect_joints import KinectJoints
 
 
 class MeasurementTypes(Enum):
@@ -233,8 +233,9 @@ class MovementTestingWindow(QWidget):
         bytes_per_line = ch * w
         qimg = QImage(rgb.data, w, h, bytes_per_line, QImage.Format.Format_RGB888)
         pixmap = QPixmap.fromImage(qimg)
-        label.setPixmap(pixmap.scaled(label.width(), label.height(), Qt.AspectRatioMode.KeepAspectRatio))
-
+        scaled_pixmap = pixmap.scaled(label.width(), label.height(), Qt.AspectRatioMode.KeepAspectRatio)
+        label.setPixmap(scaled_pixmap)
+        return
     def update_cords_label(self):
         lines = []
         if self.display_option == MeasurementTypes.CORDS_M:
@@ -257,8 +258,8 @@ class MovementTestingWindow(QWidget):
                 lines.append(f"{key.name:>20}:\t{format(value, '.2f')}")
             self.text.setText("\n".join(lines))
         if self.dynamic_display:
-            right_hand_up = self.app_manager.kinect_controller.source.joint_in_range(JointName.HAND_RIGHT, 1.15, 1.71, 0.09, 1, 1, 1)
-            left_hand_up = self.app_manager.kinect_controller.source.joint_in_range(JointName.HAND_LEFT, -0.9, 1.68, -0.07, 1, 1, 1)
+            right_hand_up = self.app_manager.kinect_controller.source.joint_in_range(KinectJoints.HAND_RIGHT, 1.15, 1.71, 0.09, 1, 1, 1)
+            left_hand_up = self.app_manager.kinect_controller.source.joint_in_range(KinectJoints.HAND_LEFT, -0.9, 1.68, -0.07, 1, 1, 1)
             if right_hand_up and left_hand_up:
                 self.set_display_mode(MeasurementTypes.CORDS_NORMALIZED)
             elif left_hand_up:

@@ -2,12 +2,12 @@ from __future__ import annotations
 
 from PyQt6.QtWidgets import QStackedWidget, QWidget, QVBoxLayout
 
-from Sources.kinect_source import KinectSource
-from Sources.source_controller import SourceController
-from Windows.classification_window import ClassificationWindow
-from Windows.menu_window import MenuWindow
-from Windows.movement_testing_window import MovementTestingWindow
-from Windows.registration_window import RegistrationWindow
+from sources.kinect_source import KinectSource
+from sources.source_controller import SourceController
+from windows.classification_window import ClassificationWindow
+from windows.menu_window import MenuWindow
+from windows.movement_testing_window import MovementTestingWindow
+from windows.registration_window import RegistrationWindow
 
 
 class AppManager(QWidget):

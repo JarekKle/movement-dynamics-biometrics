@@ -8,10 +8,10 @@ from PyQt6.QtWidgets import QApplication
 from pykinect2 import PyKinectV2
 from pykinect2 import PyKinectRuntime
 
-from Movement.bones import Bones
-from Movement.joint_name import JointName
-from Sources.kinect_source import KinectSource
-from Windows.app_manager import AppManager
+from movement.bones import Bones
+from movement.kinect_joints import KinectJoints
+from sources.kinect_source import KinectSource
+from windows.app_manager import AppManager
 
 def start_kinect():
     kinect = KinectSource()

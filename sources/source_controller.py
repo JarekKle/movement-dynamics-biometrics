@@ -1,5 +1,5 @@
-from Sources.isource import ISource
-from Sources.kinect_source import KinectSource
+from sources.isource import ISource
+from sources.kinect_source import KinectSource
 
 
 class SourceController:
