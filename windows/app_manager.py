@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from PyQt6.QtWidgets import QStackedWidget, QWidget, QVBoxLayout
 
+from biometric.biometric_system import BiometricSystem
 from sources.kinect_source import KinectSource
 from sources.source_controller import SourceController
 from windows.classification_window import ClassificationWindow
@@ -18,6 +19,7 @@ class AppManager(QWidget):
         self.stack = QStackedWidget()
 
         self.kinect_controller = SourceController(KinectSource())
+        self.biometric_system = BiometricSystem()
         self.menu_window = MenuWindow(self)
         self.movement_testing_window = None
         self.registration_window = None

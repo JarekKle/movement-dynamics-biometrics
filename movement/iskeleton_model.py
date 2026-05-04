@@ -11,6 +11,10 @@ class ISkeletonModel(ABC):
         pass
 
     @abstractmethod
+    def get_joint(self, name: str):
+        pass
+
+    @abstractmethod
     def get_bones(self):
         pass
 

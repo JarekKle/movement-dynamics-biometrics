@@ -5,8 +5,8 @@ import math
 import cv2
 from pykinect2 import PyKinectRuntime, PyKinectV2
 
-from movement.angles import Angles
-from movement.bones import Bones
+from movement.kinect_angles import KinectAngles
+from movement.kinect_bones import KinectBones
 from movement.kinect_joints import KinectJoints
 from sources.isource import ISource
 import numpy as np
@@ -76,7 +76,7 @@ class KinectSource(ISource):
         if not self.is_opened() or not self.is_running():
             return None
 
-        bones = Bones.get_bones()
+        bones = KinectBones.get_bones()
         frame = np.zeros((1080, 1920, 3), dtype=np.uint8)
         self.read_body()
         self.read_color()
@@ -241,7 +241,7 @@ class KinectSource(ISource):
                 if not body.is_tracked:
                     continue
                 joints = body.joints
-                for angle in Angles:
+                for angle in KinectAngles:
                     j1, j2, j3 = angle.value
                     if (
                             joints[j1].TrackingState == PyKinectV2.TrackingState_NotTracked or
