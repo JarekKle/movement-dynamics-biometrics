@@ -20,9 +20,11 @@ class KinectSource(ISource):
                 PyKinectV2.FrameSourceTypes_Color |
                 PyKinectV2.FrameSourceTypes_Body
         )
+        # do usunięcia
         self._joint_cords = {}
         self._joint_cords_normalized = {}
         self._angles = {}
+        # koniec
         self._last_body_frame = None
         self._last_color_frame = None
     def __enter__(self):
@@ -71,6 +73,32 @@ class KinectSource(ISource):
             self._last_color_frame = self._kinect.get_last_color_frame()
         return None
 
+    def joint_xyz(self, joint):
+        return np.array([
+            joint.Position.x,
+            joint.Position.y,
+            joint.Position.z
+        ])
+
+    def get_joints_raw(self) -> dict:
+        joint_cords_raw = {}
+        if not self.is_opened() or not self.is_running():
+            return None
+        if self._last_body_frame is not None:
+            for i in range(self._kinect.max_body_count):
+
+                body = self._last_body_frame.bodies[i]
+
+                if not body.is_tracked:
+                    continue
+                joints = body.joints
+
+                for joint in KinectJoints.get_joints():
+                    x = joints[joint].Position.x
+                    y = joints[joint].Position.y
+                    z = joints[joint].Position.z
+                    joint_cords_raw[joint] = self.joint_xyz(joints[joint])
+        return joint_cords_raw
 
     def get_new_frame(self) -> np.ndarray:
         if not self.is_opened() or not self.is_running():
@@ -158,6 +186,7 @@ class KinectSource(ISource):
                     z = joints[joint].Position.z
                     self._joint_cords[joint] = self.joint_xyz(joints[joint])
 
+    # do usunięcia
     def normalize_joints_by_shoulder_distance(self, joints = None):
         if not self.is_opened() or not self.is_running():
             return
@@ -192,13 +221,7 @@ class KinectSource(ISource):
     def get_joint_cords_normalized(self):
         return self._joint_cords_normalized
 
-    def joint_xyz(self, joint):
-        return np.array([
-            joint.Position.x,
-            joint.Position.y,
-            joint.Position.z
-        ])
-
+    # do usunięcia
     def angle_3d(self, a, b, c):
         ba = np.array(a) - np.array(b)
         bc = np.array(c) - np.array(b)
@@ -213,6 +236,7 @@ class KinectSource(ISource):
         angle = math.degrees(math.acos(cos_angle))
         return angle
 
+    # do usunięcia
     def joint_in_range(self, joint, x, y, z, x_range, y_range, z_range):
 
         self.update_joint_cords()
@@ -230,6 +254,7 @@ class KinectSource(ISource):
 
         return np.all(diff <= margin)
 
+    #  do usunięcia
     def update_angles(self):
         if not self.is_opened() or not self.is_running():
             return None
@@ -257,3 +282,4 @@ class KinectSource(ISource):
 
     def get_angles(self):
         return self._angles
+
