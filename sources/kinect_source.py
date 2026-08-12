@@ -73,6 +73,16 @@ class KinectSource(ISource):
             self._last_color_frame = self._kinect.get_last_color_frame()
         return None
 
+    def get_color_frame(self):
+        return self._last_color_frame
+
+    def get_body_frame(self):
+        return self._last_body_frame
+
+    def update(self):
+        self.read_color()
+        self.read_body()
+
     def joint_xyz(self, joint):
         return np.array([
             joint.Position.x,
@@ -99,7 +109,22 @@ class KinectSource(ISource):
                     z = joints[joint].Position.z
                     joint_cords_raw[joint] = self.joint_xyz(joints[joint])
         return joint_cords_raw
+    def joints_2d(self):
+        body_frame = self._last_body_frame
+        if body_frame is not None:
+            self._last_body_frame = body_frame
+            for i in range(self._kinect.max_body_count):
 
+                body = body_frame.bodies[i]
+
+                if not body.is_tracked:
+                    continue
+
+                joints = body.joints
+                joint_points = self._kinect.body_joints_to_color_space(joints)
+                return joint_points
+
+    # zdecydowanie do usunięcia
     def get_new_frame(self) -> np.ndarray:
         if not self.is_opened() or not self.is_running():
             return None
