@@ -1,3 +1,6 @@
+import numpy as np
+
+
 class MockPosition:
     x: float
     y: float
@@ -14,3 +17,6 @@ class MockBody:
 
 class MockBodyFrame:
     bodies: list
+
+class MockColorFrame:
+    frame: np.ndarray

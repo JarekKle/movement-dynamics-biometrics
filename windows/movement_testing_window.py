@@ -12,6 +12,7 @@ from PyQt6 import QtCore
 from PyQt6.QtWidgets import QWidget, QPushButton, QVBoxLayout, QLabel
 
 from movement.kinect_joints import KinectJoints
+from windows.camera_label import CameraLabel
 
 
 class MeasurementTypes(Enum):
@@ -163,7 +164,7 @@ class MovementTestingWindow(QWidget):
         content_layout = QHBoxLayout()
         content_layout.setSpacing(10)
 
-        self.image_label = QLabel("Camera")
+        self.image_label = CameraLabel(self.app_manager)
         self.image_label.setFixedSize(700, 520)
         self.image_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.image_label.setStyleSheet("""
@@ -203,10 +204,8 @@ class MovementTestingWindow(QWidget):
         self.timer.start(33)  # około 30 FPS
 
     def refresh_frame(self):
-        frame = self.app_manager.kinect_controller.source.get_new_frame()
+        self.image_label.refresh_frame()
 
-        if frame is not None:
-            self.update_frame(frame)
 
     def set_display_mode(self, mode):
 
@@ -226,40 +225,31 @@ class MovementTestingWindow(QWidget):
             rb.blockSignals(False)
 
     def update_frame(self, original: np.ndarray):
-        self._set_label_image(self.image_label, original)
-    def _set_label_image(self, label, image: np.ndarray):
-        rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-        h, w, ch = rgb.shape
-        bytes_per_line = ch * w
-        qimg = QImage(rgb.data, w, h, bytes_per_line, QImage.Format.Format_RGB888)
-        pixmap = QPixmap.fromImage(qimg)
-        scaled_pixmap = pixmap.scaled(label.width(), label.height(), Qt.AspectRatioMode.KeepAspectRatio)
-        label.setPixmap(scaled_pixmap)
-        return
+        self.image_label.update_frame(original)
     def update_cords_label(self):
         lines = []
         if self.display_option == MeasurementTypes.CORDS_M:
-            self.app_manager.kinect_controller.source.update_joint_cords()
+            self.app_manager.source_controller.source.update_joint_cords()
 
-            for key, value in self.app_manager.kinect_controller.source.get_joint_cords().items():
+            for key, value in self.app_manager.source_controller.source.get_joint_cords().items():
                 lines.append(f"{key.name:>20}:\t{format(value[0], '.4f')}\t{format(value[1], '.4f')}\t{format(value[2], '.4f')}")
             self.text.setText("\n".join(lines))
 
         elif self.display_option == MeasurementTypes.CORDS_NORMALIZED:
-            self.app_manager.kinect_controller.source.update_joint_cords()
-            self.app_manager.kinect_controller.source.normalize_joints_by_shoulder_distance()
-            for key, value in self.app_manager.kinect_controller.source.get_joint_cords_normalized().items():
+            self.app_manager.source_controller.source.update_joint_cords()
+            self.app_manager.source_controller.source.normalize_joints_by_shoulder_distance()
+            for key, value in self.app_manager.source_controller.source.get_joint_cords_normalized().items():
                 lines.append(f"{key.name:>20}:\t{format(value[0], '.4f')}\t{format(value[1], '.4f')}\t{format(value[2], '.4f')}")
             self.text.setText("\n".join(lines))
 
         elif self.display_option == MeasurementTypes.ANGLES:
-            self.app_manager.kinect_controller.source.update_angles()
-            for key, value in self.app_manager.kinect_controller.source.get_angles().items():
+            self.app_manager.source_controller.source.update_angles()
+            for key, value in self.app_manager.source_controller.source.get_angles().items():
                 lines.append(f"{key.name:>20}:\t{format(value, '.2f')}")
             self.text.setText("\n".join(lines))
         if self.dynamic_display:
-            right_hand_up = self.app_manager.kinect_controller.source.joint_in_range(KinectJoints.HAND_RIGHT, 1.15, 1.71, 0.09, 1, 1, 1)
-            left_hand_up = self.app_manager.kinect_controller.source.joint_in_range(KinectJoints.HAND_LEFT, -0.9, 1.68, -0.07, 1, 1, 1)
+            right_hand_up = self.app_manager.source_controller.source.joint_in_range(KinectJoints.HAND_RIGHT, 1.15, 1.71, 0.09, 1, 1, 1)
+            left_hand_up = self.app_manager.source_controller.source.joint_in_range(KinectJoints.HAND_LEFT, -0.9, 1.68, -0.07, 1, 1, 1)
             if right_hand_up and left_hand_up:
                 self.set_display_mode(MeasurementTypes.CORDS_NORMALIZED)
             elif left_hand_up:
