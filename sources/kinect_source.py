@@ -112,7 +112,6 @@ class KinectSource(ISource):
     def joints_2d(self):
         body_frame = self._last_body_frame
         if body_frame is not None:
-            self._last_body_frame = body_frame
             for i in range(self._kinect.max_body_count):
 
                 body = body_frame.bodies[i]

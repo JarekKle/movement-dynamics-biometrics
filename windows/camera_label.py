@@ -6,15 +6,17 @@ from PyQt6.QtWidgets import QLabel
 
 
 class CameraLabel(QLabel):
-    def __init__(self, app_manager):
+    def __init__(self):
         super().__init__()
-        self.app_manager = app_manager
 
-    def refresh_frame(self):
-        frame = self.app_manager.source_controller.update_frame()
-
-        if frame is not None:
-            self.update_frame(frame)
+    # do usunięcia jak przeniosę do appmanager
+    # def refresh_frame(self):
+    #     frame = self.app_manager.source_controller.update_frame()
+    #
+    #     if frame is not None:
+    #         self.update_frame(frame)
+    def refresh_frame(self, frame):
+        self.update_frame(frame)
     def set_frame(self, frame: np.ndarray):
         rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
         h, w, ch = rgb.shape
@@ -28,8 +30,9 @@ class CameraLabel(QLabel):
                 Qt.AspectRatioMode.KeepAspectRatio
             )
         )
-    def draw_skeleton_on_frame(self):
-        skeleton_frame = self.app_manager.skeleton_renderer.render()
+    #???
+    # def draw_skeleton_on_frame(self):
+    #     skeleton_frame = self.app_manager.skeleton_renderer.render()
     def update_frame(self, original: np.ndarray):
         self._set_label_image(original)
     def _set_label_image(self, image: np.ndarray):
