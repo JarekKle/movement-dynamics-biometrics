@@ -5,7 +5,8 @@ from sources.kinect_source import KinectSource
 
 class SourceController:
     def __init__(self, source: ISource, skeleton_renderer: ISkeletonRenderer):
-        self._joints = None
+        self._joints2d = None
+        self._joints_raw = None
         self._body = None
         self._frame = None
         self.fps = None
@@ -19,14 +20,15 @@ class SourceController:
         self.source.update()
         self._frame = self.source.get_color_frame()
         self._body = self.source.get_body_frame()
-        self._joints = self.source.joints_2d()
+        self._joints_raw = self.source.get_joints_raw()
+        self._joints2d = self.source.joints_2d()
 
     def get_display_frame(self):
         self.get_new_frame()
-        return self._frame
+        # return self._frame
         frame = self.skeleton_renderer.render(
             frame=self._frame,
-            joints=self._joints
+            joints=self._joints2d
         )
         return frame
 
@@ -35,3 +37,5 @@ class SourceController:
         if self.source.is_opened() and self.source.is_running():
             new_frame = self.get_display_frame()
             return new_frame
+    def get_joints_raw(self):
+        return self._joints_raw

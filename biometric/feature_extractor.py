@@ -11,11 +11,51 @@ class FeatureExtractor:
         self._joint_cords = {}
         self._joint_cords_normalized = {}
         self._angles = {}
+        self._allow_inferred = False
+    def get_joint_cords_normalized(self):
+        return self._joint_cords_normalized
+    def update_joints(self, joints):
+        self._joint_cords = joints
 
+    # def normalize_joints_by_shoulder_distance(self):
+    #     if self._joint_cords is None:
+    #         return None
+    #     spine_base = self._joint_cords[self.model.get_joint("spine_base")]
+    #     spine_base = np.array([spine_base.x, spine_base.y])
+    #     shoulder_left = self._joint_cords[self.model.get_joint("shoulder_left")]
+    #     shoulder_left = np.array([shoulder_left.x, shoulder_left.y])
+    #     shoulder_right = self._joint_cords[self.model.get_joint("shoulder_right")]
+    #     shoulder_right = np.array([shoulder_right.x, shoulder_right.y])
+    #     if spine_base is None or shoulder_left is None or shoulder_right is None:
+    #         return None
+    #
+    #     width = np.linalg.norm(shoulder_right - shoulder_left)
+    #     if width == 0:
+    #         return
+    #     normalized = {}
+    #
+    #     for j, joint in enumerate(self._joint_cords):
+    #         pos = np.array([joint.x, joint.y])
+    #         normalized[j] = (pos - spine_base) / width
+    #
+    #     return normalized
+    def is_joint_tracked(self, joint):
+        return joint[1] == 2
+    def is_joint_inferred(self, joint):
+        return joint[1] == 1
+    def is_joint_not_tracked(self, joint):
+        return joint[0] == 0
+    def is_joint_allowed(self, joint):
+        if self._allow_inferred:
+            return self.is_joint_inferred(joint) or self.is_joint_tracked(joint)
+        else:
+            return self.is_joint_tracked(joint)
     def normalize_joints_by_shoulder_distance(self):
-        spine_base = self._joint_cords[self.model.get_joint("spine_base")]
-        shoulder_left = self._joint_cords[self.model.get_joint("shoulder_left")]
-        shoulder_right = self._joint_cords[self.model.get_joint("shoulder_right")]
+        if len(self._joint_cords) == 0:
+            return None
+        spine_base = self.joint_xyz(self._joint_cords[self.model.get_joint("spine_base")]) # joint has structure [[x, y, z], tracked_state]
+        shoulder_left = self.joint_xyz(self._joint_cords[self.model.get_joint("shoulder_left")])
+        shoulder_right = self.joint_xyz(self._joint_cords[self.model.get_joint("shoulder_right")])
         if spine_base is None or shoulder_left is None or shoulder_right is None:
             return None
 
@@ -25,9 +65,12 @@ class FeatureExtractor:
         normalized = {}
 
         for j, pos in self._joint_cords.items():
-            normalized[j] = (pos - spine_base) / width
+            if self.is_joint_allowed(pos):
 
-        return normalized
+                joint_pos = self.joint_xyz(pos)
+                normalized[j] = (joint_pos - spine_base) / width
+
+        self._joint_cords_normalized = normalized
 
     def angle_3d(self, a: [float,float,float], b: [float,float,float], c: [float,float,float]) -> float:
         ba = np.array(a) - np.array(b)
@@ -60,33 +103,31 @@ class FeatureExtractor:
         return np.all(diff <= margin)
 
     def joint_xyz(self, joint):
+        joint_coords = joint[0] # joint has structure [[x, y, z], tracking_state]
         return np.array([
-            joint[0],
-            joint[1],
-            joint[2]
+            joint_coords[0],
+            joint_coords[1],
+            joint_coords[2]
         ])
 
-    def is_joint_tracked(self, joint):
-        return joint
         pass
-    def update_angles(self):
-        if self._joint_cords_normalized is not None:
-            joints = self._joint_cords_normalized
-        elif self._joint_cords is not None:
-            joints = self._joint_cords
-        else:
+    def calculate_angles(self):
+        if len(self._joint_cords) == 0:
             return None
+        angles = {}
+        for angle, (j1, j2, j3) in self.model.get_angles().items():
+            j1_cords = self._joint_cords[j1]
+            j2_cords = self._joint_cords[j2]
+            j3_cords = self._joint_cords[j3]
 
-        for angle in self.model.get_angles():
-            j1, j2, j3 = angle.value
-            if (
-                    self.is_joint_tracked(joints[j1]) is None or
-                    joints[j2] is None or
-                    joints[j3] is None
-            ):
-                continue
-            p1 = self.joint_xyz(joints[j1])
-            p2 = self.joint_xyz(joints[j2])
-            p3 = self.joint_xyz(joints[j3])
-            ang = self.angle_3d(p1, p2, p3)
-            self._angles[angle] = ang
+            if self.is_joint_allowed(j1_cords) and self.is_joint_allowed(j2_cords) and self.is_joint_allowed(j3_cords):
+                p1 = self.joint_xyz(j1_cords)
+                p2 = self.joint_xyz(j2_cords)
+                p3 = self.joint_xyz(j3_cords)
+                ang = self.angle_3d(p1, p2, p3)
+            else:
+                ang = "Untracked"
+            angles[angle] = ang
+        self._angles = angles
+    def get_angles(self):
+        return self._angles

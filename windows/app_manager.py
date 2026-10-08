@@ -5,6 +5,7 @@ from enum import Enum
 from PyQt6.QtWidgets import QStackedWidget, QWidget, QVBoxLayout
 
 from biometric.biometric_system import BiometricSystem
+from movement.kinect_skeleton_model import KinectSkeletonModel
 from sources.kinect_skeleton_renderer import KinectSkeletonRenderer
 from sources.kinect_source import KinectSource
 from sources.source_controller import SourceController
@@ -26,11 +27,12 @@ class AppManager(QWidget):
         if source == Sources.KINECT:
             self.skeleton_renderer = KinectSkeletonRenderer()
             self.source = KinectSource()
+            self.skeleton_model = KinectSkeletonModel()
         self.setWindowTitle("Movement dynamics biometrics")
 
         self.stack = QStackedWidget()
 
-        self.biometric_system = BiometricSystem()
+        self.biometric_system = BiometricSystem(self.skeleton_model)
         self.source_controller = SourceController(self.source, self.skeleton_renderer)
 
 
@@ -102,10 +104,13 @@ class AppManager(QWidget):
     def get_new_frame(self):
         return self.source_controller.update_frame()
     def get_normalized_joints(self):
-        self.source_controller.source.normalize_joints_by_shoulder_distance()
-        return self.source_controller.source.get_joint_cords_normalized()
+        joints = self.source_controller.get_joints_raw()
+        self.biometric_system.normalize_joints_by_shoulder_distance(joints)
+        return self.biometric_system.get_joint_cords_normalized()
     def get_angles(self):
-        return self.source_controller.source.get_angles()
+        joints = self.source_controller.get_joints_raw()
+        self.biometric_system.calculate_angles(joints)
+        return self.biometric_system.get_angles()
 
     def update_joints(self):
         self.source_controller.source.update_joint_cords()

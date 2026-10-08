@@ -107,7 +107,8 @@ class KinectSource(ISource):
                     x = joints[joint].Position.x
                     y = joints[joint].Position.y
                     z = joints[joint].Position.z
-                    joint_cords_raw[joint] = self.joint_xyz(joints[joint])
+                    tracked = joints[joint].TrackingState
+                    joint_cords_raw[joint] = [self.joint_xyz(joints[joint]), tracked]
         return joint_cords_raw
     def joints_2d(self):
         body_frame = self._last_body_frame
@@ -122,75 +123,6 @@ class KinectSource(ISource):
                 joints = body.joints
                 joint_points = self._kinect.body_joints_to_color_space(joints)
                 return joint_points
-
-    # zdecydowanie do usunięcia
-    def get_new_frame(self) -> np.ndarray:
-        if not self.is_opened() or not self.is_running():
-            return None
-
-        bones = KinectBones.get_bones()
-        frame = np.zeros((1080, 1920, 3), dtype=np.uint8)
-        self.read_body()
-        self.read_color()
-        body_frame = self._last_body_frame
-        color_frame = self._last_color_frame
-
-        # COLOR FRAME
-        if color_frame is not None:
-            frame = color_frame.reshape((1080, 1920, 4))
-            frame = cv2.cvtColor(frame, cv2.COLOR_BGRA2BGR)
-
-
-
-        # BODY FRAME
-        if body_frame is not None:
-            self._last_body_frame = body_frame
-            for i in range(self._kinect.max_body_count):
-
-                body = body_frame.bodies[i]
-
-                if not body.is_tracked:
-                    continue
-
-                joints = body.joints
-                joint_points = self._kinect.body_joints_to_color_space(joints)
-
-
-                # rysowanie punktów
-                for j in range(PyKinectV2.JointType_Count):
-
-                    px = joint_points[j].x
-                    py = joint_points[j].y
-
-                    if not math.isfinite(px) or not math.isfinite(py):
-                        continue
-
-                    x = int(px)
-                    y = int(py)
-
-                    cv2.circle(frame, (x, y), 6, (0, 255, 0), -1)
-
-                # rysowanie kości
-                for bone in bones:
-
-                    j1, j2 = bone
-                    px1 = joint_points[j1].x
-                    py1 = joint_points[j1].y
-                    px2 = joint_points[j2].x
-                    py2 = joint_points[j2].y
-                    if not math.isfinite(px1) or not math.isfinite(py1):
-                        continue
-                    if not math.isfinite(px2) or not math.isfinite(py2):
-                        continue
-                    x1 = int(px1)
-                    y1 = int(py1)
-                    x2 = int(px2)
-                    y2 = int(py2)
-
-                    cv2.line(frame, (x1, y1), (x2, y2), (0, 0, 255), 3)
-
-        frame = cv2.resize(frame, (1280, 720))
-        return frame
 
     def update_joint_cords(self):
         if not self.is_opened() or not self.is_running():
@@ -209,35 +141,6 @@ class KinectSource(ISource):
                     y = joints[joint].Position.y
                     z = joints[joint].Position.z
                     self._joint_cords[joint] = self.joint_xyz(joints[joint])
-
-    # do usunięcia
-    def normalize_joints_by_shoulder_distance(self, joints = None):
-        if not self.is_opened() or not self.is_running():
-            return
-        base = self._joint_cords.get(KinectJoints.SPINE_BASE)
-        shoulder_left = self._joint_cords.get(KinectJoints.SHOULDER_LEFT)
-        shoulder_right = self._joint_cords.get(KinectJoints.SHOULDER_RIGHT)
-
-        if base is None or shoulder_left is None or shoulder_right is None:
-            return
-
-        shoulder_width = np.linalg.norm(shoulder_right - shoulder_left)
-
-        if shoulder_width == 0:
-            return
-
-        self._joint_cords_normalized.clear()
-
-        if joints is not None:
-            for joint_name in joints:
-                joint_pos = self._joint_cords.get(joint_name)
-                normalized_joint = (joint_pos - base) / shoulder_width
-                self._joint_cords_normalized[joint_name] = normalized_joint
-        else:
-            for joint_name, joint_pos in self._joint_cords.items():
-                normalized_joint = (joint_pos - base) / shoulder_width
-
-                self._joint_cords_normalized[joint_name] = normalized_joint
 
     def get_joint_cords(self):
         return self._joint_cords
