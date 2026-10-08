@@ -204,7 +204,7 @@ class MovementTestingWindow(QWidget):
 
     def refresh(self):
         self.refresh_frame()
-        # self.update_cords_label()
+        self.update_cords_label()
     def refresh_frame(self):
         frame = self.app_manager.get_new_frame()
         # frame = self.app_manager.source_controller.update_frame()
@@ -247,7 +247,10 @@ class MovementTestingWindow(QWidget):
 
         elif self.display_option == MeasurementTypes.ANGLES:
             for key, value in self.app_manager.get_angles().items():
-                lines.append(f"{key.name:>20}:\t{format(value, '.2f')}")
+                if isinstance(value, str):
+                    lines.append(f"{key:>20}:\t{value}")
+                else:
+                    lines.append(f"{key:>20}:\t{format(value, '.2f')}")
             self.text.setText("\n".join(lines))
         # if self.dynamic_display:
         #     right_hand_up = self.app_manager.source_controller.source.joint_in_range(KinectJoints.HAND_RIGHT, 1.15, 1.71, 0.09, 1, 1, 1)
