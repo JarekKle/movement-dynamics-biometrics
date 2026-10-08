@@ -48,6 +48,20 @@ class KinectAngles:
     POSTURE_SPINE = (KinectJoints.NECK,
                      KinectJoints.SPINE_SHOULDER,
                      KinectJoints.SPINE_MID)
+
+
     @staticmethod
     def get_angles():
-        return [e for e in KinectJoints]
+        return {
+            "LEFT_ARM_ELBOW": KinectAngles.LEFT_ARM_ELBOW,
+            "RIGHT_ARM_ELBOW": KinectAngles.RIGHT_ARM_ELBOW,
+            "LEFT_ARM_SHOULDER": KinectAngles.LEFT_ARM_SHOULDER,
+            "RIGHT_ARM_SHOULDER": KinectAngles.RIGHT_ARM_SHOULDER,
+            "LEFT_LEG_KNEE": KinectAngles.LEFT_LEG_KNEE,
+            "RIGHT_LEG_KNEE": KinectAngles.RIGHT_LEG_KNEE,
+            "LEFT_LEG_HIP": KinectAngles.LEFT_LEG_HIP,
+            "RIGHT_LEG_HIP": KinectAngles.RIGHT_LEG_HIP,
+            "SPINE_LEFT": KinectAngles.SPINE_LEFT,
+            "SPINE_RIGHT": KinectAngles.SPINE_RIGHT,
+            "POSTURE_SPINE": KinectAngles.POSTURE_SPINE
+        }
