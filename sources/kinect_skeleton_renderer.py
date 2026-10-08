@@ -7,29 +7,39 @@ from sources.iskeleton_renderer import ISkeletonRenderer
 
 
 class KinectSkeletonRenderer(ISkeletonRenderer):
-    def render(self, frame, body_frame, joints_raw):
-        bones = KinectBones.get_bones()
-        if body_frame is None:
-            return frame
+    def render(self, frame, joints):
         if frame is None:
             return None
-        frame = frame.reshape((1080, 1920, 4))
-        frame = cv2.cvtColor(frame, cv2.COLOR_BGRA2BGR)
-        rendered_frame = frame
-        for body in body_frame.bodies:
-            if not body.is_tracked:
-                continue
+        if joints is None:
+            return frame
+        rendered_frame = frame.reshape((1080, 1920, 4))
+        rendered_frame = cv2.cvtColor(
+            rendered_frame,
+            cv2.COLOR_BGRA2BGR
+        )
 
-            frame_with_joints = self._draw_joints(frame, joints_raw)
-            rendered_frame = self._draw_bones(frame_with_joints, joints_raw, bones)
+        rendered_frame = rendered_frame.copy()
+
+        bones = KinectBones.get_bones()
+
+        rendered_frame = self._draw_joints(
+            rendered_frame,
+            joints
+        )
+
+        rendered_frame = self._draw_bones(
+            rendered_frame,
+            joints,
+            bones
+        )
+
         return rendered_frame
-
 
     def _draw_joints(self, frame, joints):
 
         # rysowanie punktów
         for joint in joints:
-            px, py = joints[joint].x, joints[joint].y
+            px, py = joint.x, joint.y
 
             if not math.isfinite(px) or not math.isfinite(py):
                 continue
