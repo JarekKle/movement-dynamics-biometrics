@@ -1,3 +1,3 @@
 class ISkeletonRenderer:
-    def render(self, frame, body_frame, joints_raw):
+    def render(self, frame, joints2d):
         pass

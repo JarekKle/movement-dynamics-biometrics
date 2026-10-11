@@ -11,8 +11,20 @@ from sources.iskeleton_renderer import ISkeletonRenderer
 
 
 class KinectSkeletonRenderer(ISkeletonRenderer):
-
-    def render(self, frame, joints):
+    def __init__(self, allow_inferred: bool):
+        self._allow_inferred = allow_inferred
+    def is_joint_tracked(self, joint):
+        return joint[1] == 2
+    def is_joint_inferred(self, joint):
+        return joint[1] == 1
+    def is_joint_not_tracked(self, joint):
+        return joint[0] == 0
+    def is_joint_allowed(self, joint):
+        if self._allow_inferred:
+            return self.is_joint_inferred(joint) or self.is_joint_tracked(joint)
+        else:
+            return self.is_joint_tracked(joint)
+    def render(self, frame, joints2d):
         if frame is None:
             return None
         rendered_frame = frame.reshape((1080, 1920, 4))
@@ -23,11 +35,11 @@ class KinectSkeletonRenderer(ISkeletonRenderer):
 
         rendered_frame = rendered_frame.copy()
 
-        if joints is None:
+        if joints2d is None:
             return rendered_frame
         bones = KinectBones.get_bones()
-        rendered_frame = self._draw_joints(rendered_frame,joints)
-        rendered_frame = self._draw_bones(rendered_frame,joints,bones)
+        rendered_frame = self._draw_joints(rendered_frame,joints2d)
+        rendered_frame = self._draw_bones(rendered_frame,joints2d,bones)
         return rendered_frame
 
     def _draw_joints(self, frame, joints):

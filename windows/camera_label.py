@@ -9,12 +9,6 @@ class CameraLabel(QLabel):
     def __init__(self):
         super().__init__()
 
-    # do usunięcia jak przeniosę do appmanager
-    # def refresh_frame(self):
-    #     frame = self.app_manager.source_controller.update_frame()
-    #
-    #     if frame is not None:
-    #         self.update_frame(frame)
     def refresh_frame(self, frame):
         self.update_frame(frame)
     def set_frame(self, frame: np.ndarray):
@@ -30,9 +24,6 @@ class CameraLabel(QLabel):
                 Qt.AspectRatioMode.KeepAspectRatio
             )
         )
-    #???
-    # def draw_skeleton_on_frame(self):
-    #     skeleton_frame = self.app_manager.skeleton_renderer.render()
     def update_frame(self, original: np.ndarray):
         self._set_label_image(original)
     def _set_label_image(self, image: np.ndarray):

@@ -6,12 +6,12 @@ from movement.iskeleton_model import ISkeletonModel
 
 
 class FeatureExtractor:
-    def __init__(self, skeleton_model: ISkeletonModel):
+    def __init__(self, skeleton_model: ISkeletonModel, allow_inferred):
         self.model = skeleton_model
         self._joint_cords = {}
         self._joint_cords_normalized = {}
         self._angles = {}
-        self._allow_inferred = False
+        self._allow_inferred = allow_inferred
     def get_joint_cords_normalized(self):
         return self._joint_cords_normalized
     def update_joints(self, joints):
@@ -110,7 +110,6 @@ class FeatureExtractor:
             joint_coords[2]
         ])
 
-        pass
     def calculate_angles(self):
         if len(self._joint_cords) == 0:
             return None
