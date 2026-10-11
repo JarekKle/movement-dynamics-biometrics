@@ -53,6 +53,13 @@ class KinectSource(ISource):
             self._kinect = None
         self._running = False
 
+    def stop(self):
+        if self._kinect:
+            self._running = False
+    def start(self):
+        if self._kinect:
+            self._running = True
+
     def is_opened(self) -> bool:
         return self._kinect is not None
 
@@ -73,6 +80,7 @@ class KinectSource(ISource):
             self._last_color_frame = self._kinect.get_last_color_frame()
         return None
 
+
     def get_color_frame(self):
         return self._last_color_frame
 
@@ -90,6 +98,16 @@ class KinectSource(ISource):
             joint.Position.z
         ])
 
+    def count_tracked_bodies(self):
+        if not self.is_opened() or not self.is_running():
+            return None
+        if self._last_body_frame is None:
+            return 0
+        body_count = 0
+        for body in self._last_body_frame.bodies:
+            if body.is_tracked:
+                body_count += 1
+        return body_count
     def get_joints_raw(self) -> dict:
         joint_cords_raw = {}
         if not self.is_opened() or not self.is_running():
@@ -148,20 +166,10 @@ class KinectSource(ISource):
     def get_joint_cords_normalized(self):
         return self._joint_cords_normalized
 
-    # do usunięcia
-    def angle_3d(self, a, b, c):
-        ba = np.array(a) - np.array(b)
-        bc = np.array(c) - np.array(b)
+    def get_angles(self):
+        return self._angles
 
-        dot = np.dot(ba, bc)
-        norm = np.linalg.norm(ba) * np.linalg.norm(bc)
 
-        if norm == 0:
-            return 0.0
-
-        cos_angle = np.clip(dot / norm, -1.0, 1.0)
-        angle = math.degrees(math.acos(cos_angle))
-        return angle
 
     # do usunięcia
     def joint_in_range(self, joint, x, y, z, x_range, y_range, z_range):
@@ -180,33 +188,4 @@ class KinectSource(ISource):
         diff = np.abs(joint_xyz - target)
 
         return np.all(diff <= margin)
-
-    #  do usunięcia
-    def update_angles(self):
-        if not self.is_opened() or not self.is_running():
-            return None
-        if self._last_body_frame is not None:
-            for i in range(self._kinect.max_body_count):
-
-                body = self._last_body_frame.bodies[i]
-
-                if not body.is_tracked:
-                    continue
-                joints = body.joints
-                for angle in KinectAngles:
-                    j1, j2, j3 = angle.value
-                    if (
-                            joints[j1].TrackingState == PyKinectV2.TrackingState_NotTracked or
-                            joints[j2].TrackingState == PyKinectV2.TrackingState_NotTracked or
-                            joints[j3].TrackingState == PyKinectV2.TrackingState_NotTracked
-                    ):
-                        continue
-                    p1 = self.joint_xyz(joints[j1])
-                    p2 = self.joint_xyz(joints[j2])
-                    p3 = self.joint_xyz(joints[j3])
-                    ang = self.angle_3d(p1, p2, p3)
-                    self._angles[angle] = ang
-
-    def get_angles(self):
-        return self._angles
 

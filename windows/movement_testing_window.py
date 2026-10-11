@@ -12,6 +12,7 @@ from PyQt6 import QtCore
 from PyQt6.QtWidgets import QWidget, QPushButton, QVBoxLayout, QLabel
 
 from movement.kinect_joints import KinectJoints
+from sources.tracking_status import TrackingStatus
 from windows.camera_label import CameraLabel
 
 
@@ -35,7 +36,11 @@ class MovementTestingWindow(QWidget):
         self.generate_layout()
         self.assign_behavior()
         self.setLayout(self.layout)
-
+        # TODO move to an appropriate function
+        self.status_label = QLabel("Initializing source...")
+        self.status_label.setFixedHeight(15)
+        self.layout.addWidget(self.status_label)
+        self.update_status_label(TrackingStatus.PERSON_LOST)
     def generate_layout(self):
         self.generate_config_panel()
         self.generate_camera_panel()
@@ -58,22 +63,22 @@ class MovementTestingWindow(QWidget):
 
         self.btn_start = QPushButton("Start")
         self.btn_stop = QPushButton("Stop")
-        self.btn_pause = QPushButton("Pause")
-        self.btn_play = QPushButton("Play")
+        self.btn_open = QPushButton("Open")
+        self.btn_close = QPushButton("Close")
 
         for btn in [
             self.btn_start,
             self.btn_stop,
-            self.btn_pause,
-            self.btn_play
+            self.btn_open,
+            self.btn_close
         ]:
             btn.setFixedHeight(28)
             btn.setMinimumWidth(65)
 
         top_bar.addWidget(self.btn_start)
         top_bar.addWidget(self.btn_stop)
-        top_bar.addWidget(self.btn_pause)
-        top_bar.addWidget(self.btn_play)
+        top_bar.addWidget(self.btn_open)
+        top_bar.addWidget(self.btn_close)
 
         # Recording
         self.btn_record_start = QPushButton("Rec")
@@ -155,7 +160,6 @@ class MovementTestingWindow(QWidget):
 
         self.layout.addLayout(mode_bar)
 
-
     def onStateChanged(self):
         self.dynamic_display = self.dynamic_display_checkbox.isChecked()
     def generate_camera_panel(self):
@@ -201,6 +205,25 @@ class MovementTestingWindow(QWidget):
         self.timer = QTimer()
         self.timer.timeout.connect(self.refresh)
         self.timer.start(33)  # około 30 FPS
+        self.btn_stop.clicked.connect(self.stop_source)
+        self.btn_start.clicked.connect(self.start_source)
+        self.btn_open.clicked.connect(self.open_source)
+        self.btn_close.clicked.connect(self.close_source)
+        self.btn_record_start.clicked.connect(self.record_start)
+
+    def stop_source(self):
+        self.app_manager.stop_source()
+    def start_source(self):
+        self.app_manager.start_source()
+
+    def open_source(self):
+        self.app_manager.open_source()
+
+    def close_source(self):
+        self.app_manager.close_source()
+
+    def record_start(self):
+        pass
 
     def refresh(self):
         self.refresh_frame()
@@ -231,6 +254,19 @@ class MovementTestingWindow(QWidget):
 
     def update_frame(self, original: np.ndarray):
         self.image_label.update_frame(original)
+
+    def update_status_label(self, status):
+        label_text = {
+            TrackingStatus.SOURCE_DISCONNECTED: "Source disconnected",
+            TrackingStatus.SOURCE_READY: "Source ready",
+            TrackingStatus.NO_PEOPLE_TRACKED: "No person detected!",
+            TrackingStatus.TOO_MANY_PEOPLE_TRACKED: "Too many people detected!",
+            TrackingStatus.ALL_REQUIRED_JOINTS_TRACKED: "Everything OK",
+            TrackingStatus.REQUIRED_JOINTS_NOT_TRACKED: "Missing required joints! Correct your position!",
+            TrackingStatus.PERSON_LOST: "Unable to track person",
+            TrackingStatus.ERROR: "An error occurred with the source"
+        }
+        self.status_label.setText(label_text.get(status,"Unknown status"))
     def update_cords_label(self):
         lines = []
         self.app_manager.update_joints()

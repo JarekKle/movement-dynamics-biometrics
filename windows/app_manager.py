@@ -24,17 +24,19 @@ class AppStates(Enum):
 class AppManager(QWidget):
     def __init__(self, source: Sources):
         super().__init__()
+        self._allow_inferred = True
+        self._dynamic_tracking = True
+
         if source == Sources.KINECT:
-            self.skeleton_renderer = KinectSkeletonRenderer()
+            self.skeleton_renderer = KinectSkeletonRenderer(self._allow_inferred)
             self.source = KinectSource()
             self.skeleton_model = KinectSkeletonModel()
         self.setWindowTitle("Movement dynamics biometrics")
 
         self.stack = QStackedWidget()
 
-        self.biometric_system = BiometricSystem(self.skeleton_model)
-        self.source_controller = SourceController(self.source, self.skeleton_renderer)
-
+        self.biometric_system = BiometricSystem(self.skeleton_model, self._allow_inferred)
+        self.source_controller = SourceController(self.source, self.skeleton_renderer, self._dynamic_tracking)
 
         self.menu_window = MenuWindow(self)
         self._app_state = AppStates.MENU
@@ -102,7 +104,7 @@ class AppManager(QWidget):
         self._app_state = AppStates.CLASSIFICATION
 
     def get_new_frame(self):
-        return self.source_controller.update_frame()
+        return self.source_controller.update_frame(self._dynamic_tracking)
     def get_normalized_joints(self):
         joints = self.source_controller.get_joints_raw()
         self.biometric_system.normalize_joints_by_shoulder_distance(joints)
@@ -117,3 +119,12 @@ class AppManager(QWidget):
 
     def get_joint_cords(self):
         return self.source_controller.source.get_joint_cords()
+
+    def stop_source(self):
+        self.source_controller.source.stop()
+    def start_source(self):
+        self.source_controller.source.start()
+    def open_source(self):
+        self.source_controller.source.open()
+    def close_source(self):
+        self.source_controller.source.close()
