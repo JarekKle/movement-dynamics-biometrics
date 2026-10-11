@@ -1,0 +1,11 @@
+from enum import Enum
+
+class TrackingStatus(Enum):
+    SOURCE_DISCONNECTED = 0
+    SOURCE_READY = 1
+    NO_PEOPLE_TRACKED = 2
+    TOO_MANY_PEOPLE_TRACKED = 3
+    ALL_REQUIRED_JOINTS_TRACKED = 4
+    REQUIRED_JOINTS_NOT_TRACKED = 5
+    PERSON_LOST = 6
+    ERROR = 7
