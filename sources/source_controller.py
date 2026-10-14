@@ -51,12 +51,16 @@ class SourceController:
         return self._joints_raw
 
     def determine_tracking_status(self):
+        new_status = self.tracking_status
         if not self.source.is_opened():
             new_status = TrackingStatus.SOURCE_DISCONNECTED
+        elif not self.source.is_running():
+            new_status = TrackingStatus.SOURCE_PAUSED
         else:
             body_count = self.source.count_tracked_bodies()
             if body_count == 0:
-                new_status = TrackingStatus.NO_PEOPLE_TRACKED
+                if self.tracking_status is not TrackingStatus.PERSON_LOST:
+                    new_status = TrackingStatus.NO_PEOPLE_TRACKED
             if body_count > 1:
                 new_status = TrackingStatus.TOO_MANY_PEOPLE_TRACKED
             if body_count == 1:
@@ -67,7 +71,8 @@ class SourceController:
             if new_status == TrackingStatus.NO_PEOPLE_TRACKED and (self.tracking_status == TrackingStatus.REQUIRED_JOINTS_NOT_TRACKED or self.tracking_status == TrackingStatus.ALL_REQUIRED_JOINTS_TRACKED):
                 new_status = TrackingStatus.PERSON_LOST
         self.tracking_status = new_status
-
+    def get_tracking_status(self):
+        return self.tracking_status
     # TODO
     def is_required_joints_tracked(self):
         return True

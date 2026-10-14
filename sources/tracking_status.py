@@ -9,3 +9,4 @@ class TrackingStatus(Enum):
     REQUIRED_JOINTS_NOT_TRACKED = 5
     PERSON_LOST = 6
     ERROR = 7
+    SOURCE_PAUSED = 8
