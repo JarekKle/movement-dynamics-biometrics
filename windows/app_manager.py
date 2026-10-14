@@ -11,6 +11,7 @@ from sources.kinect_source import KinectSource
 from sources.source_controller import SourceController
 from sources.sources import Sources
 from windows.classification_window import ClassificationWindow
+from windows.kinect_joint_selection_dialog import KinectJointSelectionDialog
 from windows.menu_window import MenuWindow
 from windows.movement_testing_window import MovementTestingWindow
 from windows.registration_window import RegistrationWindow
@@ -26,11 +27,11 @@ class AppManager(QWidget):
         super().__init__()
         self._allow_inferred = True
         self._dynamic_tracking = True
-
         if source == Sources.KINECT:
             self.skeleton_renderer = KinectSkeletonRenderer(self._allow_inferred)
             self.source = KinectSource()
             self.skeleton_model = KinectSkeletonModel()
+        self.joint_selection_map = self.skeleton_model.generate_joint_selection_map()
         self.setWindowTitle("Movement dynamics biometrics")
 
         self.stack = QStackedWidget()
@@ -128,3 +129,12 @@ class AppManager(QWidget):
         self.source_controller.source.open()
     def close_source(self):
         self.source_controller.source.close()
+    def get_tracking_status(self):
+        self.source_controller.determine_tracking_status()
+        return self.source_controller.get_tracking_status(
+        )
+    def select_joints(self):
+        joint_translation_map = self.skeleton_model.get_joint_translation_map()
+        dlg = KinectJointSelectionDialog(joint_translation_map, self.joint_selection_map)
+        if dlg.exec():
+            self.joint_selection_map = dlg.get_joint_selection_map()

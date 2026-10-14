@@ -85,12 +85,14 @@ class MovementTestingWindow(QWidget):
         self.btn_record_stop = QPushButton("Stop Rec")
         self.btn_clear = QPushButton("Clear")
         self.btn_exit = QPushButton("Exit")
+        self.btn_joint_select = QPushButton("Select joints")
 
         for btn in [
             self.btn_record_start,
             self.btn_record_stop,
             self.btn_clear,
-            self.btn_exit
+            self.btn_exit,
+            self.btn_joint_select
         ]:
             btn.setFixedHeight(28)
 
@@ -101,19 +103,11 @@ class MovementTestingWindow(QWidget):
         top_bar.addWidget(self.btn_record_stop)
         top_bar.addWidget(self.btn_clear)
         top_bar.addWidget(self.btn_exit)
+        top_bar.addWidget(self.btn_joint_select)
         top_bar.addWidget(self.dynamic_display_checkbox)
 
 
         # Movement select
-        self.movement_select = QComboBox()
-        self.movement_select.setFixedWidth(150)
-        self.movement_select.addItems([
-            "Movement 1",
-            "Movement 2",
-            "Movement 3"
-        ])
-
-        top_bar.addWidget(self.movement_select)
 
         top_bar.addStretch()
 
@@ -205,11 +199,15 @@ class MovementTestingWindow(QWidget):
         self.timer = QTimer()
         self.timer.timeout.connect(self.refresh)
         self.timer.start(33)  # około 30 FPS
+        self.status_timer = QTimer()
+        self.status_timer.timeout.connect(self.refresh_tracking_status)
+        self.status_timer.start(1000)
         self.btn_stop.clicked.connect(self.stop_source)
         self.btn_start.clicked.connect(self.start_source)
         self.btn_open.clicked.connect(self.open_source)
         self.btn_close.clicked.connect(self.close_source)
         self.btn_record_start.clicked.connect(self.record_start)
+        self.btn_joint_select.clicked.connect(self.select_joints)
 
     def stop_source(self):
         self.app_manager.stop_source()
@@ -234,6 +232,8 @@ class MovementTestingWindow(QWidget):
         if frame is not None:
             self.image_label.refresh_frame(frame)
 
+    def select_joints(self):
+        self.app_manager.select_joints()
 
     def set_display_mode(self, mode):
 
@@ -264,9 +264,13 @@ class MovementTestingWindow(QWidget):
             TrackingStatus.ALL_REQUIRED_JOINTS_TRACKED: "Everything OK",
             TrackingStatus.REQUIRED_JOINTS_NOT_TRACKED: "Missing required joints! Correct your position!",
             TrackingStatus.PERSON_LOST: "Unable to track person",
-            TrackingStatus.ERROR: "An error occurred with the source"
+            TrackingStatus.ERROR: "An error occurred with the source",
+            TrackingStatus.SOURCE_PAUSED: "Source paused"
         }
         self.status_label.setText(label_text.get(status,"Unknown status"))
+    def refresh_tracking_status(self):
+        status = self.app_manager.get_tracking_status()
+        self.update_status_label(status)
     def update_cords_label(self):
         lines = []
         self.app_manager.update_joints()
