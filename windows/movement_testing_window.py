@@ -26,6 +26,7 @@ class MovementTestingWindow(QWidget):
         super().__init__()
         self.app_manager = app_manager
         self.dynamic_display = False
+        self.fps = 30
         self.layout = QVBoxLayout()
         self.display_option = MeasurementTypes.CORDS_NORMALIZED
         btn_menu = QPushButton("Menu Window")
@@ -60,13 +61,14 @@ class MovementTestingWindow(QWidget):
 
         top_bar.addWidget(fps_label)
         top_bar.addWidget(self.fps_input)
-
+        self.btn_apply_fps = QPushButton("OK")
         self.btn_start = QPushButton("Start")
         self.btn_stop = QPushButton("Stop")
         self.btn_open = QPushButton("Open")
         self.btn_close = QPushButton("Close")
 
         for btn in [
+            self.btn_apply_fps,
             self.btn_start,
             self.btn_stop,
             self.btn_open,
@@ -74,15 +76,12 @@ class MovementTestingWindow(QWidget):
         ]:
             btn.setFixedHeight(28)
             btn.setMinimumWidth(65)
-
-        top_bar.addWidget(self.btn_start)
-        top_bar.addWidget(self.btn_stop)
-        top_bar.addWidget(self.btn_open)
-        top_bar.addWidget(self.btn_close)
+            top_bar.addWidget(btn)
 
         # Recording
         self.btn_record_start = QPushButton("Rec")
         self.btn_record_stop = QPushButton("Stop Rec")
+        self.btn_record_stop.setEnabled(False)
         self.btn_clear = QPushButton("Clear")
         self.btn_exit = QPushButton("Exit")
         self.btn_joint_select = QPushButton("Select joints")
@@ -95,15 +94,10 @@ class MovementTestingWindow(QWidget):
             self.btn_joint_select
         ]:
             btn.setFixedHeight(28)
-
+            top_bar.addWidget(btn)
         self.dynamic_display_checkbox = QCheckBox(text="Dynamic display")
         self.dynamic_display_checkbox.stateChanged.connect(self.onStateChanged)
 
-        top_bar.addWidget(self.btn_record_start)
-        top_bar.addWidget(self.btn_record_stop)
-        top_bar.addWidget(self.btn_clear)
-        top_bar.addWidget(self.btn_exit)
-        top_bar.addWidget(self.btn_joint_select)
         top_bar.addWidget(self.dynamic_display_checkbox)
 
 
@@ -198,17 +192,26 @@ class MovementTestingWindow(QWidget):
     def assign_behavior(self):
         self.timer = QTimer()
         self.timer.timeout.connect(self.refresh)
-        self.timer.start(33)  # około 30 FPS
+        self.timer.start(1000 // self.fps)
         self.status_timer = QTimer()
         self.status_timer.timeout.connect(self.refresh_tracking_status)
         self.status_timer.start(1000)
+        self.btn_apply_fps.clicked.connect(self.set_fps)
         self.btn_stop.clicked.connect(self.stop_source)
         self.btn_start.clicked.connect(self.start_source)
         self.btn_open.clicked.connect(self.open_source)
         self.btn_close.clicked.connect(self.close_source)
         self.btn_record_start.clicked.connect(self.record_start)
+        self.btn_record_stop.clicked.connect(self.record_stop)
+
         self.btn_joint_select.clicked.connect(self.select_joints)
 
+    def set_fps(self):
+        try:
+            self.fps = int(self.fps_input.text())
+            self.timer.setInterval(1000 // self.fps)
+        except:
+            print("Wrong fps value")
     def stop_source(self):
         self.app_manager.stop_source()
     def start_source(self):
@@ -221,8 +224,17 @@ class MovementTestingWindow(QWidget):
         self.app_manager.close_source()
 
     def record_start(self):
-        pass
-
+        status = self.refresh_tracking_status()
+        if status == TrackingStatus.ALL_REQUIRED_JOINTS_TRACKED:
+            self.app_manager.start_recording()
+            self.btn_record_start.setEnabled(False)
+            self.btn_record_stop.setEnabled(True)
+    def record_stop(self):
+        recording = self.app_manager.stop_recording()
+        if recording is not None:
+            self.app_manager.save_recording(recording)
+        self.btn_record_start.setEnabled(True)
+        self.btn_record_stop.setEnabled(False)
     def refresh(self):
         self.refresh_frame()
         self.update_cords_label()
@@ -271,6 +283,7 @@ class MovementTestingWindow(QWidget):
     def refresh_tracking_status(self):
         status = self.app_manager.get_tracking_status()
         self.update_status_label(status)
+        return status
     def update_cords_label(self):
         lines = []
         self.app_manager.update_joints()

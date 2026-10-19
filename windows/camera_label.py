@@ -11,6 +11,7 @@ class CameraLabel(QLabel):
 
     def refresh_frame(self, frame):
         self.update_frame(frame)
+
     def set_frame(self, frame: np.ndarray):
         rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
         h, w, ch = rgb.shape
@@ -24,8 +25,10 @@ class CameraLabel(QLabel):
                 Qt.AspectRatioMode.KeepAspectRatio
             )
         )
+
     def update_frame(self, original: np.ndarray):
         self._set_label_image(original)
+
     def _set_label_image(self, image: np.ndarray):
         rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
         h, w, ch = rgb.shape

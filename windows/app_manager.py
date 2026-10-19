@@ -6,6 +6,8 @@ from PyQt6.QtWidgets import QStackedWidget, QWidget, QVBoxLayout
 
 from biometric.biometric_system import BiometricSystem
 from movement.kinect_skeleton_model import KinectSkeletonModel
+from recording.json_recording_repository import JsonRecordingRepository
+from recording.recording_controller import RecordingController
 from sources.kinect_skeleton_renderer import KinectSkeletonRenderer
 from sources.kinect_source import KinectSource
 from sources.source_controller import SourceController
@@ -23,9 +25,9 @@ class AppStates(Enum):
     TESTING = 3
 
 class AppManager(QWidget):
-    def __init__(self, source: Sources):
+    def __init__(self, source: Sources, recording_path):
         super().__init__()
-        self._allow_inferred = True
+        self._allow_inferred = False
         self._dynamic_tracking = True
         if source == Sources.KINECT:
             self.skeleton_renderer = KinectSkeletonRenderer(self._allow_inferred)
@@ -37,7 +39,10 @@ class AppManager(QWidget):
         self.stack = QStackedWidget()
 
         self.biometric_system = BiometricSystem(self.skeleton_model, self._allow_inferred)
-        self.source_controller = SourceController(self.source, self.skeleton_renderer, self._dynamic_tracking)
+        self.source_controller = SourceController(self.source, self.skeleton_renderer, self._dynamic_tracking, self._allow_inferred, self.joint_selection_map)
+
+        self.recording_repository = JsonRecordingRepository(recording_path)
+        self.recording_controller = RecordingController(self.recording_repository,1/30)
 
         self.menu_window = MenuWindow(self)
         self._app_state = AppStates.MENU
@@ -52,6 +57,20 @@ class AppManager(QWidget):
         layout.addWidget(self.stack)
         self.setLayout(layout)
 
+    def start_recording(self):
+        if self.recording_controller.is_recording():
+            return
+        self.recording_controller.start_recording()
+    def stop_recording(self):
+        recording = self.recording_controller.stop_recording()
+        if recording is not None:
+            self.last_recording = recording
+        return recording
+    def save_recording(self, recording=None):
+        recording = recording or self.last_recording
+        if recording is None:
+            return
+        self.recording_controller.save_recording(recording)
     def assign_menu_behavior(self):
         pass
     def assign_registration_window_behavior(self):
@@ -105,7 +124,11 @@ class AppManager(QWidget):
         self._app_state = AppStates.CLASSIFICATION
 
     def get_new_frame(self):
-        return self.source_controller.update_frame(self._dynamic_tracking)
+        new_frame = self.source_controller.update_frame(self._dynamic_tracking)
+        if self.recording_controller.is_recording():
+            body = self.source_controller.get_joints_as_skeleton_frame()
+            self.recording_controller.add_frame(body)
+        return new_frame
     def get_normalized_joints(self):
         joints = self.source_controller.get_joints_raw()
         self.biometric_system.normalize_joints_by_shoulder_distance(joints)
@@ -131,10 +154,11 @@ class AppManager(QWidget):
         self.source_controller.source.close()
     def get_tracking_status(self):
         self.source_controller.determine_tracking_status()
-        return self.source_controller.get_tracking_status(
-        )
+        return self.source_controller.get_tracking_status()
     def select_joints(self):
         joint_translation_map = self.skeleton_model.get_joint_translation_map()
-        dlg = KinectJointSelectionDialog(joint_translation_map, self.joint_selection_map)
+        bones_translation_map = self.skeleton_model.get_bones_translation_map()
+        dlg = KinectJointSelectionDialog(joint_translation_map, self.joint_selection_map, bones_translation_map)
         if dlg.exec():
             self.joint_selection_map = dlg.get_joint_selection_map()
+            self.source_controller.set_joint_selection_map(self.joint_selection_map)

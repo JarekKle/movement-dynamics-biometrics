@@ -44,7 +44,7 @@ class FeatureExtractor:
     def is_joint_inferred(self, joint):
         return joint[1] == 1
     def is_joint_not_tracked(self, joint):
-        return joint[0] == 0
+        return joint[1] == 0
     def is_joint_allowed(self, joint):
         if self._allow_inferred:
             return self.is_joint_inferred(joint) or self.is_joint_tracked(joint)
