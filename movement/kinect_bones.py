@@ -13,6 +13,8 @@ class KinectBones:
     LEFT_ARM = [
         (KinectJoints.SPINE_SHOULDER, KinectJoints.SHOULDER_LEFT),
         (KinectJoints.SHOULDER_LEFT, KinectJoints.ELBOW_LEFT),
+    ]
+    LEFT_HAND = [
         (KinectJoints.ELBOW_LEFT, KinectJoints.WRIST_LEFT),
         (KinectJoints.WRIST_LEFT, KinectJoints.HAND_LEFT),
         (KinectJoints.HAND_LEFT, KinectJoints.HAND_TIP_LEFT),
@@ -22,27 +24,32 @@ class KinectBones:
     RIGHT_ARM = [
         (KinectJoints.SPINE_SHOULDER, KinectJoints.SHOULDER_RIGHT),
         (KinectJoints.SHOULDER_RIGHT, KinectJoints.ELBOW_RIGHT),
+
+    ]
+    RIGHT_HAND = [
         (KinectJoints.ELBOW_RIGHT, KinectJoints.WRIST_RIGHT),
         (KinectJoints.WRIST_RIGHT, KinectJoints.HAND_RIGHT),
         (KinectJoints.HAND_RIGHT, KinectJoints.HAND_TIP_RIGHT),
         (KinectJoints.WRIST_RIGHT, KinectJoints.THUMB_RIGHT),
     ]
-
     LEFT_LEG = [
         (KinectJoints.SPINE_BASE, KinectJoints.HIP_LEFT),
         (KinectJoints.HIP_LEFT, KinectJoints.KNEE_LEFT),
+    ]
+
+    LEFT_FOOT = [
         (KinectJoints.KNEE_LEFT, KinectJoints.ANKLE_LEFT),
         (KinectJoints.ANKLE_LEFT, KinectJoints.FOOT_LEFT),
     ]
-
     RIGHT_LEG = [
         (KinectJoints.SPINE_BASE, KinectJoints.HIP_RIGHT),
         (KinectJoints.HIP_RIGHT, KinectJoints.KNEE_RIGHT),
+    ]
+    RIGHT_FOOT = [
         (KinectJoints.KNEE_RIGHT, KinectJoints.ANKLE_RIGHT),
         (KinectJoints.ANKLE_RIGHT, KinectJoints.FOOT_RIGHT),
     ]
-
-    ALL = SPINE + LEFT_ARM + RIGHT_ARM + LEFT_LEG + RIGHT_LEG
+    ALL = SPINE + LEFT_ARM + LEFT_HAND + RIGHT_ARM + RIGHT_HAND + LEFT_LEG + LEFT_FOOT +  RIGHT_LEG + RIGHT_FOOT
 
     @staticmethod
     def get_bones():
