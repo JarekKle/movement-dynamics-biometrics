@@ -39,7 +39,7 @@ import sys
 # sys.setprofile(tracefunc)
 def start_window():
     app = QApplication(sys.argv)
-    window = AppManager(Sources.KINECT)
+    window = AppManager(Sources.KINECT, "C:\\Users\\user\\Desktop\\movement-dynamics-biometrics\\recordings")
     window.show()
     window.showMaximized()
     app.exec()
