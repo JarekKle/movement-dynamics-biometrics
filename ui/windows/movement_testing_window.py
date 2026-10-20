@@ -8,6 +8,7 @@ from PyQt6.QtWidgets import QHBoxLayout, QTextEdit, QRadioButton, \
     QLineEdit, QButtonGroup, QCheckBox
 from PyQt6.QtWidgets import QWidget, QPushButton, QVBoxLayout, QLabel
 
+from domain.recording.recording_state import RecordingState
 from sources.tracking_status import TrackingStatus
 from ui.camera_label import CameraLabel
 
@@ -37,7 +38,7 @@ class MovementTestingWindow(QWidget):
         self.status_label = QLabel("Initializing source...")
         self.status_label.setFixedHeight(15)
         self.layout.addWidget(self.status_label)
-        self.update_status_label(TrackingStatus.PERSON_LOST)
+        self.update_status_label(TrackingStatus.SOURCE_DISCONNECTED,RecordingState.NOT_RECORDING,0)
     def generate_layout(self):
         self.generate_config_panel()
         self.generate_camera_panel()
@@ -148,7 +149,6 @@ class MovementTestingWindow(QWidget):
         self.dynamic_display = self.dynamic_display_checkbox.isChecked()
     def generate_camera_panel(self):
 
-        # Kamera + features obok siebie
         content_layout = QHBoxLayout()
         content_layout.setSpacing(10)
 
@@ -263,8 +263,8 @@ class MovementTestingWindow(QWidget):
     def update_frame(self, original: np.ndarray):
         self.image_label.update_frame(original)
 
-    def update_status_label(self, status):
-        label_text = {
+    def update_status_label(self, source_status, recording_status, remaining_seconds):
+        label_source_text = {
             TrackingStatus.SOURCE_DISCONNECTED: "Source disconnected",
             TrackingStatus.SOURCE_READY: "Source ready",
             TrackingStatus.NO_PEOPLE_TRACKED: "No person detected!",
@@ -273,13 +273,19 @@ class MovementTestingWindow(QWidget):
             TrackingStatus.REQUIRED_JOINTS_NOT_TRACKED: "Missing required joints! Correct your position!",
             TrackingStatus.PERSON_LOST: "Unable to track person",
             TrackingStatus.ERROR: "An error occurred with the source",
-            TrackingStatus.SOURCE_PAUSED: "Source paused"
+            TrackingStatus.SOURCE_PAUSED: "Source paused",
+            RecordingState.RECORDING: "Recording movements",
+            RecordingState.COUNTING_DOWN: f"Recording in: {remaining_seconds}s",
+            RecordingState.FINISHED_RECORDING: "Recording done!",
+            RecordingState.CANCELLED_RECORDING: "Recording cancelled!"
         }
-        self.status_label.setText(label_text.get(status,"Unknown status"))
+        self.status_label.setText(label_source_text.get(recording_status,label_source_text.get(source_status,"Unknown status")))
     def refresh_tracking_status(self):
-        status = self.app_manager.get_tracking_status()
-        self.update_status_label(status)
-        return status
+        source_status = self.app_manager.get_tracking_status()
+        recording_status = self.app_manager.get_recording_status()
+        remaining_seconds = self.app_manager.get_recording_countdown_seconds()
+        self.update_status_label(source_status, recording_status, remaining_seconds)
+        return source_status
     def update_cords_label(self):
         lines = []
         self.app_manager.update_joints()
