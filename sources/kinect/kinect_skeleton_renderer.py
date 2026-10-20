@@ -20,7 +20,8 @@ class KinectSkeletonRenderer(ISkeletonRenderer):
             return self.is_joint_inferred(joint) or self.is_joint_tracked(joint)
         else:
             return self.is_joint_tracked(joint)
-    def render(self, frame, joints2d):
+
+    def render(self, frame, joints2d, joint_selection_map):
         if frame is None:
             return None
         rendered_frame = frame.reshape((1080, 1920, 4))
@@ -34,12 +35,16 @@ class KinectSkeletonRenderer(ISkeletonRenderer):
         if joints2d is None:
             return rendered_frame
         bones = KinectBones.get_bones()
-        rendered_frame = self._draw_joints(rendered_frame,joints2d)
-        rendered_frame = self._draw_bones(rendered_frame,joints2d,bones)
+        rendered_frame = self._draw_joints(rendered_frame,joints2d, joint_selection_map)
+        rendered_frame = self._draw_bones(rendered_frame,joints2d,bones, joint_selection_map)
         return rendered_frame
 
-    def _draw_joints(self, frame, joints):
-        for joint in joints:
+    def _draw_joints(self, frame, joints, joint_selection_map):
+
+        for i in range(len(joints)):
+            if not joint_selection_map[i]:
+                continue
+            joint = joints[i]
             px, py = joint.x, joint.y
 
             if not math.isfinite(px) or not math.isfinite(py):
@@ -55,13 +60,14 @@ class KinectSkeletonRenderer(ISkeletonRenderer):
 
         return frame
 
-    def _draw_bones(self, frame, joints, bones):
+    def _draw_bones(self, frame, joints, bones, joint_selection_map):
         for j1, j2 in bones:
+            if not joint_selection_map[j1] or not joint_selection_map[j2]:
+                continue
             p1 = joints[j1]
             p2 = joints[j2]
             if p1 is None or p2 is None:
                 continue
-
             px1, py1 = p1.x, p1.y
             px2, py2 = p2.x, p2.y
 
