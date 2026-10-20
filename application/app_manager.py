@@ -5,18 +5,18 @@ from enum import Enum
 from PyQt6.QtWidgets import QStackedWidget, QWidget, QVBoxLayout
 
 from biometric.biometric_system import BiometricSystem
-from movement.kinect_skeleton_model import KinectSkeletonModel
-from recording.json_recording_repository import JsonRecordingRepository
-from recording.recording_controller import RecordingController
-from sources.kinect_skeleton_renderer import KinectSkeletonRenderer
-from sources.kinect_source import KinectSource
+from domain.movement.kinect.kinect_skeleton_model import KinectSkeletonModel
+from application.json_recording_repository import JsonRecordingRepository
+from application.recording_controller import RecordingController
+from sources.kinect.kinect_skeleton_renderer import KinectSkeletonRenderer
+from sources.kinect.kinect_source import KinectSource
 from sources.source_controller import SourceController
-from sources.sources import Sources
-from windows.classification_window import ClassificationWindow
-from windows.kinect_joint_selection_dialog import KinectJointSelectionDialog
-from windows.menu_window import MenuWindow
-from windows.movement_testing_window import MovementTestingWindow
-from windows.registration_window import RegistrationWindow
+from sources.source_registry import SourceRegistry
+from ui.windows.classification_window import ClassificationWindow
+from ui.kinect_joint_selection_dialog import KinectJointSelectionDialog
+from ui.windows.menu_window import MenuWindow
+from ui.windows.movement_testing_window import MovementTestingWindow
+from ui.windows.registration_window import RegistrationWindow
 
 class AppStates(Enum):
     MENU = 0,
@@ -25,11 +25,11 @@ class AppStates(Enum):
     TESTING = 3
 
 class AppManager(QWidget):
-    def __init__(self, source: Sources, recording_path):
+    def __init__(self, source: SourceRegistry, recording_path):
         super().__init__()
         self._allow_inferred = False
         self._dynamic_tracking = True
-        if source == Sources.KINECT:
+        if source == SourceRegistry.KINECT:
             self.skeleton_renderer = KinectSkeletonRenderer(self._allow_inferred)
             self.source = KinectSource()
             self.skeleton_model = KinectSkeletonModel()
@@ -143,7 +143,8 @@ class AppManager(QWidget):
 
     def get_joint_cords(self):
         return self.source_controller.source.get_joint_cords()
-
+    def get_joint_selection_map(self):
+        return self.joint_selection_map
     def stop_source(self):
         self.source_controller.source.stop()
     def start_source(self):

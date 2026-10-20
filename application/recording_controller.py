@@ -1,6 +1,6 @@
 from uuid import uuid4
 import time
-from recording.skeleton_recording import SkeletonRecording
+from domain.recording.skeleton_recording import SkeletonRecording
 
 
 class RecordingController:

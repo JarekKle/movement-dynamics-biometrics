@@ -1,8 +1,8 @@
 from dataclasses import dataclass
 from typing import Mapping
 
-from movement.joint_position import JointPosition
-from movement.kinect_joints import KinectJoints
+from domain.movement.joint_position import JointPosition
+from domain.movement.kinect.kinect_joints import KinectJoints
 
 
 @dataclass

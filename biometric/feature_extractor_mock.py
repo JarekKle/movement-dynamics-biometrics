@@ -2,7 +2,7 @@ import math
 
 import numpy as np
 
-from movement.iskeleton_model import ISkeletonModel
+from domain.movement.iskeleton_model import ISkeletonModel
 
 
 class FeatureExtractorMock:

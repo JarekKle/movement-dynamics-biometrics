@@ -1,10 +1,9 @@
 import time
 
-from movement.joint_position import JointPosition
-from recording.skeleton_frame import SkeletonFrame
+from domain.movement.joint_position import JointPosition
+from domain.recording.skeleton_frame import SkeletonFrame
 from sources.iskeleton_renderer import ISkeletonRenderer
 from sources.isource import ISource
-from sources.kinect_source import KinectSource
 from sources.tracking_status import TrackingStatus
 
 

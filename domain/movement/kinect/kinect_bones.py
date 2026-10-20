@@ -1,5 +1,5 @@
 
-from movement.kinect_joints import KinectJoints
+from domain.movement.kinect.kinect_joints import KinectJoints
 
 class KinectBones:
 

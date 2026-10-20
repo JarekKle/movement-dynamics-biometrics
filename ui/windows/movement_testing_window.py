@@ -2,18 +2,14 @@ from __future__ import annotations
 
 from enum import Enum
 
-import cv2
 import numpy as np
 from PyQt6.QtCore import Qt, QTimer
-from PyQt6.QtGui import QImage, QPixmap
-from PyQt6.QtWidgets import QStackedWidget, QWidget, QVBoxLayout, QLabel, QHBoxLayout, QTextEdit, QRadioButton, \
-    QLineEdit, QComboBox, QButtonGroup, QGroupBox, QCheckBox
-from PyQt6 import QtCore
+from PyQt6.QtWidgets import QHBoxLayout, QTextEdit, QRadioButton, \
+    QLineEdit, QButtonGroup, QCheckBox
 from PyQt6.QtWidgets import QWidget, QPushButton, QVBoxLayout, QLabel
 
-from movement.kinect_joints import KinectJoints
 from sources.tracking_status import TrackingStatus
-from windows.camera_label import CameraLabel
+from ui.camera_label import CameraLabel
 
 
 class MeasurementTypes(Enum):

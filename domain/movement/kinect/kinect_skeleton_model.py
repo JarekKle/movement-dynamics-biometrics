@@ -1,7 +1,7 @@
-from movement.kinect_angles import KinectAngles
-from movement.kinect_bones import KinectBones
-from movement.iskeleton_model import ISkeletonModel
-from movement.kinect_joints import KinectJoints
+from domain.movement.kinect.kinect_angles import KinectAngles
+from domain.movement.kinect.kinect_bones import KinectBones
+from domain.movement.iskeleton_model import ISkeletonModel
+from domain.movement.kinect.kinect_joints import KinectJoints
 
 
 class KinectSkeletonModel(ISkeletonModel):

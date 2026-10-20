@@ -1,13 +1,8 @@
 from __future__ import annotations
 
-import math
-
-import cv2
 from pykinect2 import PyKinectRuntime, PyKinectV2
 
-from movement.kinect_angles import KinectAngles
-from movement.kinect_bones import KinectBones
-from movement.kinect_joints import KinectJoints
+from domain.movement.kinect.kinect_joints import KinectJoints
 from sources.isource import ISource
 import numpy as np
 

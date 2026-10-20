@@ -2,11 +2,7 @@ import math
 
 import cv2
 
-from movement.kinect_bones import KinectBones
-from sources.iskeleton_renderer import ISkeletonRenderer
-
-
-from movement.kinect_bones import KinectBones
+from domain.movement.kinect.kinect_bones import KinectBones
 from sources.iskeleton_renderer import ISkeletonRenderer
 
 

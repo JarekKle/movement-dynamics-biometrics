@@ -1,22 +1,11 @@
-import math
-import random
-import sys
-
-import cv2
-import numpy as np
 from PyQt6.QtWidgets import QApplication
-
-from pykinect2 import PyKinectV2
-from pykinect2 import PyKinectRuntime
 
 from biometric.feature_extractor_mock import FeatureExtractorMock
 from generators.mock_frames_generator import MockFramesGenerator
-from movement.kinect_bones import KinectBones
-from movement.kinect_joints import KinectJoints
-from movement.kinect_skeleton_model import KinectSkeletonModel
-from sources.kinect_source import KinectSource
-from sources.sources import Sources
-from windows.app_manager import AppManager
+from domain.movement.kinect.kinect_skeleton_model import KinectSkeletonModel
+from sources.kinect.kinect_source import KinectSource
+from sources.source_registry import SourceRegistry
+from application.app_manager import AppManager
 
 
 def start_kinect():
@@ -39,7 +28,7 @@ import sys
 # sys.setprofile(tracefunc)
 def start_window():
     app = QApplication(sys.argv)
-    window = AppManager(Sources.KINECT, "C:\\Users\\user\\Desktop\\movement-dynamics-biometrics\\recordings")
+    window = AppManager(SourceRegistry.KINECT, "C:\\Users\\user\\Desktop\\movement-dynamics-biometrics\\recordings")
     window.show()
     window.showMaximized()
     app.exec()

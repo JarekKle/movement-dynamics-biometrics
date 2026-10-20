@@ -1,5 +1,5 @@
 from enum import Enum
 
 
-class Sources(Enum):
+class SourceRegistry(Enum):
     KINECT = 0

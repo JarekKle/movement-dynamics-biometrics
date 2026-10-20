@@ -1,6 +1,6 @@
 import numpy as np
 
-class DynamicTimeWrapping:
+class DynamicTimeWarping:
     def __init__(self):
         self.movement1 = None
         self.movement2 = None

@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 
-from recording.skeleton_frame import SkeletonFrame
+from domain.recording.skeleton_frame import SkeletonFrame
 @dataclass
 class SkeletonRecording:
     recording_id: str
