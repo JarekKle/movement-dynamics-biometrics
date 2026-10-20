@@ -226,9 +226,11 @@ class MovementTestingWindow(QWidget):
             self.btn_record_start.setEnabled(False)
             self.btn_record_stop.setEnabled(True)
     def record_stop(self):
-        recording = self.app_manager.stop_recording()
+        recording, skeleton_image_recording = self.app_manager.stop_recording()
         if recording is not None:
             self.app_manager.save_recording(recording)
+        if skeleton_image_recording is not None:
+            self.app_manager.save_recording(skeleton_image_recording)
         self.btn_record_start.setEnabled(True)
         self.btn_record_stop.setEnabled(False)
     def refresh(self):

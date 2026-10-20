@@ -122,7 +122,7 @@ class RegistrationWindow(QWidget):
         self.status_label = QLabel("Initializing source...")
         self.status_label.setFixedHeight(15)
         self.layout.addWidget(self.status_label)
-        self.update_status_label(TrackingStatus.PERSON_LOST)
+        self.update_status_label(TrackingStatus.SOURCE_DISCONNECTED, RecordingState.NOT_RECORDING, 0)
     def assign_behavior(self):
         self.timer = QTimer()
         self.timer.timeout.connect(self.refresh)

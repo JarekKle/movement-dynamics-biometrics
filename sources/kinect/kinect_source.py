@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from pykinect2 import PyKinectRuntime, PyKinectV2
 
+from domain.movement.kinect.joint_2d import Joint2D
 from domain.movement.kinect.kinect_joints import KinectJoints
 from sources.isource import ISource
 import numpy as np
@@ -22,6 +23,7 @@ class KinectSource(ISource):
         # koniec
         self._last_body_frame = None
         self._last_color_frame = None
+        self.joint_selection_map = None
     def __enter__(self):
         self.open()
         return self
@@ -132,11 +134,9 @@ class KinectSource(ISource):
 
                 if not body.is_tracked:
                     continue
-
                 joints = body.joints
                 joint_points = self._kinect.body_joints_to_color_space(joints)
                 return joint_points
-
     def update_joint_cords(self):
         if not self.is_opened() or not self.is_running():
             return

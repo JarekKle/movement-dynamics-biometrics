@@ -4,6 +4,7 @@ import time
 from PyQt6.QtCore import QTimer, QObject
 
 from domain.recording.recording_state import RecordingState
+from domain.recording.skeleton_image_recording import SkeletonImageRecording
 from domain.recording.skeleton_recording import SkeletonRecording
 
 
@@ -23,6 +24,7 @@ class RecordingController(QObject):
         self.sample_rate = sample_rate
         self.countdown_seconds = 3
         self.recording = None
+        self.skeleton_image_recording = None
         self.next_sample_time = None
         self.start_time = None
     def is_recording(self):
@@ -32,8 +34,15 @@ class RecordingController(QObject):
             return
         if not self.source_controller.is_ready_to_record():
             return
+        recording_id = uuid4()
         self.recording = SkeletonRecording(
-            recording_id=str(uuid4()),
+            recording_id=str(recording_id),
+            sample_rate=self.sample_rate,
+            frames=[],
+            metadata=metadata or {}
+        )
+        self.skeleton_image_recording = SkeletonImageRecording(
+            recording_id=str(recording_id)+"image",
             sample_rate=self.sample_rate,
             frames=[],
             metadata=metadata or {}
@@ -43,12 +52,19 @@ class RecordingController(QObject):
         self.next_sample_time = 0
         self.remaining_seconds = self.countdown_seconds
         self.timer.start()
-    def add_frame(self, frame):
+    def add_frames(self, frame,joints_2d):
         if not self.is_recording():
             return
         time_diff = time.time() - self.start_time
-        self.recording.frames.append(frame)
         self.next_sample_time = time_diff + 1/self.sample_rate
+
+        self.add_frame(frame)
+        self.add_image_frame(joints_2d)
+
+    def add_frame(self, frame):
+        self.recording.frames.append(frame)
+    def add_image_frame(self, joints_2d):
+        self.skeleton_image_recording.frames.append(joints_2d)
     def change_state(self, new_state):
         self.state = new_state
         self.source_controller.recording_state = self.state
@@ -60,12 +76,16 @@ class RecordingController(QObject):
         self.change_state(RecordingState.FINISHED_RECORDING)
         self.state_reset_timer.start()
         recording = self.recording
+        skeleton_image_recording = self.skeleton_image_recording
         self.recording = None
+        self.skeleton_image_recording = None
         self.next_sample_time = None
         self.start_time = None
-        return recording
+        return recording, skeleton_image_recording
     def save_recording(self, recording):
         self.repository.save(recording)
+    def save_image_recording(self, image_recording):
+        self.repository.save(image_recording)
     def cancel_recording(self):
         self.timer.stop()
         self.change_state(RecordingState.CANCELLED_RECORDING)

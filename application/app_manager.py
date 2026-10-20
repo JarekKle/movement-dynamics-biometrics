@@ -62,10 +62,12 @@ class AppManager(QWidget):
             return
         self.recording_controller.start_recording()
     def stop_recording(self):
-        recording = self.recording_controller.stop_recording()
+        recording, skeleton_image_recording = self.recording_controller.stop_recording()
         if recording is not None:
             self.last_recording = recording
-        return recording
+        if skeleton_image_recording is not None:
+            self.last_skeleton_image_recording = skeleton_image_recording
+        return recording, skeleton_image_recording
     def save_recording(self, recording=None):
         recording = recording or self.last_recording
         if recording is None:
@@ -131,7 +133,10 @@ class AppManager(QWidget):
         new_frame = self.source_controller.update_frame(self._dynamic_tracking)
         if self.recording_controller.is_recording():
             body = self.source_controller.get_joints_as_skeleton_frame()
+            joints_2d = self.source_controller.get_joints_2d_selected()
             self.recording_controller.add_frame(body)
+            self.recording_controller.add_image_frame(joints_2d)
+
         return new_frame
     def get_normalized_joints(self):
         joints = self.source_controller.get_joints_raw()

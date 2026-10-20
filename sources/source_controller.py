@@ -1,6 +1,7 @@
 import time
 
 from domain.movement.joint_position import JointPosition
+from domain.movement.kinect.joint_2d import Joint2D
 from domain.recording.skeleton_frame import SkeletonFrame
 from sources.iskeleton_renderer import ISkeletonRenderer
 from sources.isource import ISource
@@ -20,7 +21,7 @@ class SourceController:
         self.skeleton_renderer = skeleton_renderer
         self._dynamic_tracking = dynamic_tracking
         self._allow_inferred = allow_inferred
-        self.joint_selection_map = joint_selection_map
+        self.set_joint_selection_map(joint_selection_map)
     def set_source(self, source: ISource):
         self.source = source
     def is_dynamic_tracking_on(self):
@@ -34,6 +35,17 @@ class SourceController:
     def get_joints_data(self):
         self._joints_raw = self.source.get_joints_raw()
         self._joints2d = self.source.joints_2d()
+    def get_joints_2d_selected(self):
+        joints_2d_selected = []
+        for i in range(len(self._joints2d)):
+            if self.joint_selection_map[i]:
+                joints_2d_selected.append(Joint2D(
+                    i,
+                    self._joints2d[i].x,
+                    self._joints2d[i].y
+                ))
+        return joints_2d_selected
+
     def get_joints_as_skeleton_frame(self):
         self._joints_raw = self.source.get_joints_raw()
         joint_positions = {}
@@ -61,10 +73,10 @@ class SourceController:
         self.get_joints_data()
         frame = self.skeleton_renderer.render(
             frame=self._frame,
-            joints2d=self._joints2d
+            joints2d=self._joints2d,
+            joint_selection_map=self.joint_selection_map
         )
         return frame
-
     def update_frame(self, dynamic_tracking: bool):
         if self.source.is_opened() and self.source.is_running():
             if dynamic_tracking:
@@ -120,3 +132,4 @@ class SourceController:
         return True
     def set_joint_selection_map(self, joint_selection_map):
         self.joint_selection_map = joint_selection_map
+        self.source.joint_selection_map = self.joint_selection_map
