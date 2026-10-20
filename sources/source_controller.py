@@ -96,6 +96,8 @@ class SourceController:
             if new_status == TrackingStatus.NO_PEOPLE_TRACKED and (self.tracking_status == TrackingStatus.REQUIRED_JOINTS_NOT_TRACKED or self.tracking_status == TrackingStatus.ALL_REQUIRED_JOINTS_TRACKED):
                 new_status = TrackingStatus.PERSON_LOST
         self.tracking_status = new_status
+    def is_ready_to_record(self):
+        return self.tracking_status==TrackingStatus.ALL_REQUIRED_JOINTS_TRACKED
     def get_tracking_status(self):
         return self.tracking_status
     def is_joint_tracked(self, joint):

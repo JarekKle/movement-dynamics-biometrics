@@ -42,7 +42,7 @@ class AppManager(QWidget):
         self.source_controller = SourceController(self.source, self.skeleton_renderer, self._dynamic_tracking, self._allow_inferred, self.joint_selection_map)
 
         self.recording_repository = JsonRecordingRepository(recording_path)
-        self.recording_controller = RecordingController(self.recording_repository,1/30)
+        self.recording_controller = RecordingController(self.source_controller,self.recording_repository,1/30)
 
         self.menu_window = MenuWindow(self)
         self._app_state = AppStates.MENU
@@ -71,6 +71,10 @@ class AppManager(QWidget):
         if recording is None:
             return
         self.recording_controller.save_recording(recording)
+    def get_recording_status(self):
+        return self.recording_controller.get_recording_status()
+    def get_recording_countdown_seconds(self):
+        return self.recording_controller.get_recording_countdown_seconds()
     def assign_menu_behavior(self):
         pass
     def assign_registration_window_behavior(self):
@@ -107,7 +111,7 @@ class AppManager(QWidget):
 
 
     def show_registration_window(self):
-        self.source_controller.source.close()
+        self.source_controller.source.open()
         if self.registration_window is None:
             self.registration_window = RegistrationWindow(self)
             self.stack.addWidget(self.registration_window)
