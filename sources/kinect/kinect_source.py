@@ -41,23 +41,28 @@ class KinectSource(ISource):
         self._kinect = PyKinectRuntime.PyKinectRuntime(
             self.frame_types
         )
-        self._running = True
-
+        self.start()
 
     def close(self):
-        if self._kinect:
+        if self.is_opened():
             self._kinect.close()
             self._kinect = None
         self._running = False
 
     def stop(self):
-        if self._kinect:
+        if self.is_opened():
             self._running = False
     def start(self):
-        if self._kinect:
+        if self.is_opened():
             self._running = True
 
     def is_opened(self) -> bool:
+        if self._kinect is None:
+            return False
+        try:
+            return self._kinect.has_new_body_frame()
+        except:
+            return False
         return self._kinect is not None
 
     def is_running(self) -> bool:
