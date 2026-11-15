@@ -37,7 +37,8 @@ class AppManager(QWidget):
         """
         super().__init__()
         self._allow_inferred = False
-        self._dynamic_tracking = True
+        self._dynamic_tracking = False
+        self._movement_activity_detection = True
         if source == SourceRegistry.KINECT:
             self.skeleton_renderer = KinectSkeletonRenderer(self._allow_inferred)
             self.source = KinectSource()
@@ -52,8 +53,9 @@ class AppManager(QWidget):
                                                   self._allow_inferred, self.joint_selection_map)
 
         self.recording_repository = JsonRecordingRepository(recording_path)
-        self.recording_controller = RecordingController(self.source_controller, self.recording_repository, 1 / 30)
+        self.recording_controller = RecordingController(self.source_controller, self.recording_repository, 5, self._movement_activity_detection)
 
+        self.recording_controller.recording_finished.connect(self.handle_recording_finish)
         self.menu_window = MenuWindow(self)
         self._app_state = AppStates.MENU
         self.movement_testing_window = None
@@ -82,12 +84,20 @@ class AppManager(QWidget):
         :return: A dictionary of recorded joints and a dictionary of joints position on the screen.
         :rtype: dict
         """
-        recording, skeleton_image_recording = self.recording_controller.stop_recording()
+        rec_wrapper = self.recording_controller.stop_recording()
+        if rec_wrapper is None:
+            return None, None
+        else:
+            recording, skeleton_image_recording = rec_wrapper
         if recording is not None:
             self.last_recording = recording
         if skeleton_image_recording is not None:
             self.last_skeleton_image_recording = skeleton_image_recording
         return recording, skeleton_image_recording
+    def handle_recording_finish(self, recording, skeleton_image_recording=None):
+        self.save_recording(recording)
+        if skeleton_image_recording is not None:
+            self.save_recording(skeleton_image_recording)
 
     def save_recording(self, recording=None):
         """
@@ -165,9 +175,10 @@ class AppManager(QWidget):
         new_frame = self.source_controller.update_frame(self._dynamic_tracking)
         if self.recording_controller.is_recording():
             body = self.source_controller.get_joints_as_skeleton_frame()
+            if not self._dynamic_tracking:
+                self.source_controller.get_joints_data()
             joints_2d = self.source_controller.get_joints_2d_selected()
-            self.recording_controller.add_frame(body)
-            self.recording_controller.add_image_frame(joints_2d)
+            self.recording_controller.add_frames(body, joints_2d)
 
         return new_frame
 

@@ -67,7 +67,10 @@ class SourceController:
         )
     def get_display_frame(self):
         self.get_new_frame()
-        return self._frame
+        frame = self.skeleton_renderer.render_body_frame(
+            frame=self._frame,
+        )
+        return frame
     def get_display_frame_with_skeleton(self):
         self.get_new_frame()
         self.get_joints_data()
@@ -124,6 +127,8 @@ class SourceController:
         else:
             return self.is_joint_tracked(joint)
     def is_required_joints_tracked(self):
+        if not self._dynamic_tracking:
+            return True
         for joint, position in self._joints_raw.items():
             if self.joint_selection_map[joint]:
                 if not self.is_joint_allowed(position):

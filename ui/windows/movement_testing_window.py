@@ -220,19 +220,21 @@ class MovementTestingWindow(QWidget):
         self.app_manager.close_source()
 
     def record_start(self):
-        status = self.refresh_tracking_status()
-        if status == TrackingStatus.ALL_REQUIRED_JOINTS_TRACKED:
-            self.app_manager.start_recording()
-            self.btn_record_start.setEnabled(False)
-            self.btn_record_stop.setEnabled(True)
+        # status = self.refresh_tracking_status()
+        # if status == TrackingStatus.ALL_REQUIRED_JOINTS_TRACKED:
+        self.app_manager.start_recording()
+        self.toggle_start_stop_buttons(True)
+    def toggle_start_stop_buttons(self, start):
+        self.btn_record_start.setEnabled(not start)
+        self.btn_record_stop.setEnabled(start)
     def record_stop(self):
         recording, skeleton_image_recording = self.app_manager.stop_recording()
         if recording is not None:
             self.app_manager.save_recording(recording)
         if skeleton_image_recording is not None:
             self.app_manager.save_recording(skeleton_image_recording)
-        self.btn_record_start.setEnabled(True)
-        self.btn_record_stop.setEnabled(False)
+        self.toggle_start_stop_buttons(False)
+
     def refresh(self):
         self.refresh_frame()
         self.update_cords_label()
@@ -287,6 +289,8 @@ class MovementTestingWindow(QWidget):
         recording_status = self.app_manager.get_recording_status()
         remaining_seconds = self.app_manager.get_recording_countdown_seconds()
         self.update_status_label(source_status, recording_status, remaining_seconds)
+        self.toggle_start_stop_buttons(recording_status in (RecordingState.RECORDING, RecordingState.COUNTING_DOWN))
+
         return source_status
     def update_cords_label(self):
         lines = []

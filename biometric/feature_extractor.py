@@ -51,6 +51,8 @@ class FeatureExtractor:
         else:
             return self.is_joint_tracked(joint)
     def normalize_joints_by_shoulder_distance(self):
+        if self._joint_cords is None:
+            return None
         if len(self._joint_cords) == 0:
             return None
         spine_base = self.joint_xyz(self._joint_cords[self.model.get_joint("spine_base")]) # joint has structure [[x, y, z], tracked_state]
