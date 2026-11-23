@@ -8,6 +8,7 @@ from biometric.biometric_system import BiometricSystem
 from domain.movement.kinect.kinect_skeleton_model import KinectSkeletonModel
 from application.json_recording_repository import JsonRecordingRepository
 from application.recording_controller import RecordingController
+from domain.recording.recording_state import RecordingState
 from sources.kinect.kinect_skeleton_renderer import KinectSkeletonRenderer
 from sources.kinect.kinect_source import KinectSource
 from sources.source_controller import SourceController
@@ -36,8 +37,8 @@ class AppManager(QWidget):
         :type recording_path: str
         """
         super().__init__()
-        self._allow_inferred = False
-        self._dynamic_tracking = False
+        self._allow_inferred = True
+        self._dynamic_tracking = True
         self._movement_activity_detection = True
         if source == SourceRegistry.KINECT:
             self.skeleton_renderer = KinectSkeletonRenderer(self._allow_inferred)
@@ -69,6 +70,8 @@ class AppManager(QWidget):
         layout.addWidget(self.stack)
         self.setLayout(layout)
 
+    def _is_recording_active(self):
+        return self.get_recording_status() in (RecordingState.COUNTING_DOWN, RecordingState.RECORDING)
     def start_recording(self):
         """
         Activate a method in the recording controller to start recording.
@@ -84,16 +87,7 @@ class AppManager(QWidget):
         :return: A dictionary of recorded joints and a dictionary of joints position on the screen.
         :rtype: dict
         """
-        rec_wrapper = self.recording_controller.stop_recording()
-        if rec_wrapper is None:
-            return None, None
-        else:
-            recording, skeleton_image_recording = rec_wrapper
-        if recording is not None:
-            self.last_recording = recording
-        if skeleton_image_recording is not None:
-            self.last_skeleton_image_recording = skeleton_image_recording
-        return recording, skeleton_image_recording
+        self.recording_controller.stop_recording()
     def handle_recording_finish(self, recording, skeleton_image_recording=None):
         self.save_recording(recording)
         if skeleton_image_recording is not None:
@@ -105,7 +99,6 @@ class AppManager(QWidget):
         :type recording: dict
         :return:
         """
-        recording = recording or self.last_recording
         if recording is None:
             return
         self.recording_controller.save_recording(recording)
@@ -128,6 +121,8 @@ class AppManager(QWidget):
         """
         Sets currently displayed window to Menu and changed app's state to AppStates.MENU
         """
+        if self._is_recording_active():
+            self.recording_controller.cancel_recording()
         self.source_controller.source.close()
         self.stack.setCurrentWidget(self.menu_window)
         self._app_state = AppStates.MENU
@@ -222,9 +217,11 @@ class AppManager(QWidget):
         return self.source_controller.get_tracking_status()
 
     def select_joints(self):
+        if self._is_recording_active():
+            return
         joint_translation_map = self.skeleton_model.get_joint_translation_map()
         bones_translation_map = self.skeleton_model.get_bones_translation_map()
-        dlg = KinectJointSelectionDialog(joint_translation_map, self.joint_selection_map, bones_translation_map)
+        dlg = KinectJointSelectionDialog(joint_translation_map, dict(self.joint_selection_map), bones_translation_map)
         if dlg.exec():
             self.joint_selection_map = dlg.get_joint_selection_map()
             self.source_controller.set_joint_selection_map(self.joint_selection_map)

@@ -26,10 +26,10 @@ class MovementTestingWindow(QWidget):
         self.fps = 30
         self.layout = QVBoxLayout()
         self.display_option = MeasurementTypes.CORDS_NORMALIZED
-        btn_menu = QPushButton("Menu Window")
-        btn_menu.clicked.connect(self.app_manager.show_menu_window)
+        self.btn_menu = QPushButton("Menu Window")
+        self.btn_menu.clicked.connect(self.app_manager.show_menu_window)
 
-        self.layout.addWidget(btn_menu)
+        self.layout.addWidget(self.btn_menu)
 
         self.generate_layout()
         self.assign_behavior()
@@ -223,17 +223,22 @@ class MovementTestingWindow(QWidget):
         # status = self.refresh_tracking_status()
         # if status == TrackingStatus.ALL_REQUIRED_JOINTS_TRACKED:
         self.app_manager.start_recording()
-        self.toggle_start_stop_buttons(True)
-    def toggle_start_stop_buttons(self, start):
-        self.btn_record_start.setEnabled(not start)
-        self.btn_record_stop.setEnabled(start)
+        self.set_recording_controls_locked(True)
+    def set_recording_controls_locked(self, locked):
+        self.btn_record_start.setEnabled(not locked)
+        self.btn_record_stop.setEnabled(locked)
+        self.btn_apply_fps.setEnabled(not locked)
+        self.btn_stop.setEnabled(not locked)
+        self.btn_start.setEnabled(not locked)
+        self.btn_clear.setEnabled(not locked)
+        self.btn_close.setEnabled(not locked)
+        self.btn_exit.setEnabled(not locked)
+        self.btn_joint_select.setEnabled(not locked)
+        self.btn_open.setEnabled(not locked)
+        self.btn_menu.setEnabled(not locked)
     def record_stop(self):
-        recording, skeleton_image_recording = self.app_manager.stop_recording()
-        if recording is not None:
-            self.app_manager.save_recording(recording)
-        if skeleton_image_recording is not None:
-            self.app_manager.save_recording(skeleton_image_recording)
-        self.toggle_start_stop_buttons(False)
+        self.app_manager.stop_recording()
+        self.set_recording_controls_locked(False)
 
     def refresh(self):
         self.refresh_frame()
@@ -289,7 +294,7 @@ class MovementTestingWindow(QWidget):
         recording_status = self.app_manager.get_recording_status()
         remaining_seconds = self.app_manager.get_recording_countdown_seconds()
         self.update_status_label(source_status, recording_status, remaining_seconds)
-        self.toggle_start_stop_buttons(recording_status in (RecordingState.RECORDING, RecordingState.COUNTING_DOWN))
+        self.set_recording_controls_locked(recording_status in (RecordingState.RECORDING, RecordingState.COUNTING_DOWN))
 
         return source_status
     def update_cords_label(self):

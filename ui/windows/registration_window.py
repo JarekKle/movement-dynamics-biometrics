@@ -29,10 +29,10 @@ class RegistrationWindow(QWidget):
         self.generate_camera_panel()
         self.generate_tracking_state_panel()
         self.generate_status_label()
-        btn_menu = QPushButton("Menu Window")
-        btn_menu.clicked.connect(self.app_manager.show_menu_window)
+        self.btn_menu = QPushButton("Menu Window")
+        self.btn_menu.clicked.connect(self.app_manager.show_menu_window)
 
-        self.layout.addWidget(btn_menu)
+        self.layout.addWidget(self.btn_menu)
 
         self.setLayout(self.layout)
     def generate_config_panel(self):
@@ -146,17 +146,18 @@ class RegistrationWindow(QWidget):
     def start_source(self):
         self.app_manager.start_source()
     def record_start(self):
-        status = self.refresh_tracking_status()
-        if status == TrackingStatus.ALL_REQUIRED_JOINTS_TRACKED:
-            self.app_manager.start_recording()
-            self.btn_record_start.setEnabled(False)
-            self.btn_record_stop.setEnabled(True)
+        self.app_manager.start_recording()
+        self.set_recording_controls_locked(True)
     def record_stop(self):
-        recording = self.app_manager.stop_recording()
-        if recording is not None:
-            self.app_manager.save_recording(recording)
-        self.btn_record_start.setEnabled(True)
-        self.btn_record_stop.setEnabled(False)
+        self.app_manager.stop_recording()
+        self.set_recording_controls_locked(False)
+    def set_recording_controls_locked(self, locked):
+        self.btn_record_start.setEnabled(not locked)
+        self.btn_record_stop.setEnabled(locked)
+        self.btn_start.setEnabled(not locked)
+        self.btn_stop.setEnabled(not locked)
+        self.btn_apply_fps.setEnabled(not locked)
+        self.btn_menu.setEnabled(not locked)
     def refresh(self):
         self.refresh_frame()
     def refresh_frame(self):
@@ -189,6 +190,7 @@ class RegistrationWindow(QWidget):
         recording_status = self.app_manager.get_recording_status()
         remaining_seconds = self.app_manager.get_recording_countdown_seconds()
         self.update_status_label(source_status, recording_status, remaining_seconds)
+        self.set_recording_controls_locked(recording_status in (RecordingState.RECORDING, RecordingState.COUNTING_DOWN))
         return source_status
     def select_joints(self):
         self.app_manager.select_joints()
