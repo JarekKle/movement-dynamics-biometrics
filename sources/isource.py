@@ -19,3 +19,7 @@ class ISource(ABC):
     @abstractmethod
     def is_opened(self) -> bool:
         pass
+
+    @abstractmethod
+    def is_running(self):
+        pass

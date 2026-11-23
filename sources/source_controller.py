@@ -92,7 +92,7 @@ class SourceController:
 
     def determine_tracking_status(self):
         new_status = self.tracking_status
-        if not self.source.is_opened():
+        if not self.source.is_opened() or not self.source.is_available():
             new_status = TrackingStatus.SOURCE_DISCONNECTED
         elif not self.source.is_running():
             new_status = TrackingStatus.SOURCE_PAUSED

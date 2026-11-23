@@ -57,14 +57,15 @@ class KinectSource(ISource):
             self._running = True
 
     def is_opened(self) -> bool:
+        return self._kinect is not None
+
+    def is_available(self) -> bool:
         if self._kinect is None:
             return False
         try:
-            return self._kinect.has_new_body_frame()
-        except:
+            return self._kinect._sensor.IsAvailable
+        except Exception:
             return False
-        return self._kinect is not None
-
     def is_running(self) -> bool:
         return self._running
 
@@ -90,8 +91,9 @@ class KinectSource(ISource):
         return self._last_body_frame
 
     def update(self):
-        self.read_color()
-        self.read_body()
+        if self.is_available():
+            self.read_color()
+            self.read_body()
 
     def joint_xyz(self, joint):
         return np.array([
