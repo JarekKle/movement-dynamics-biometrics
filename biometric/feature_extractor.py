@@ -12,6 +12,9 @@ class FeatureExtractor:
         self._joint_cords_normalized = {}
         self._angles = {}
         self._allow_inferred = allow_inferred
+
+    def configure(self, allow_inferred):
+        self._allow_inferred = allow_inferred
     def get_joint_cords_normalized(self):
         return self._joint_cords_normalized
     def update_joints(self, joints):

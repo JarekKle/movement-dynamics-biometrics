@@ -1,5 +1,6 @@
 from PyQt6.QtWidgets import QApplication
 
+from application.app_config import ConfigRepository
 from biometric.feature_extractor_mock import FeatureExtractorMock
 from generators.mock_frames_generator import MockFramesGenerator
 from domain.movement.kinect.kinect_skeleton_model import KinectSkeletonModel
@@ -28,7 +29,7 @@ import sys
 # sys.setprofile(tracefunc)
 def start_window():
     app = QApplication(sys.argv)
-    window = AppManager(SourceRegistry.KINECT, "C:\\Users\\user\\Desktop\\movement-dynamics-biometrics\\recordings")
+    window = AppManager(ConfigRepository("config.json"))
     window.show()
     window.showMaximized()
     app.exec()

@@ -25,8 +25,12 @@ class MenuWindow(QWidget):
         btn_clas = QPushButton("Classification Window")
         btn_clas.clicked.connect(self.app_manager.show_classification_window)
 
+        btn_config = QPushButton("Settings")
+        btn_config.clicked.connect(self.app_manager.show_config_window)
+
         layout.addWidget(btn_test)
         layout.addWidget(btn_reg)
         layout.addWidget(btn_clas)
+        layout.addWidget(btn_config)
 
         self.setLayout(layout)

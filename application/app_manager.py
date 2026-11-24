@@ -4,6 +4,7 @@ from enum import Enum
 
 from PyQt6.QtWidgets import QStackedWidget, QWidget, QVBoxLayout
 
+from application.app_config import ConfigRepository, AppConfig
 from biometric.biometric_system import BiometricSystem
 from domain.movement.kinect.kinect_skeleton_model import KinectSkeletonModel
 from application.json_recording_repository import JsonRecordingRepository
@@ -15,6 +16,7 @@ from sources.source_controller import SourceController
 from sources.source_registry import SourceRegistry
 from ui.windows.classification_window import ClassificationWindow
 from ui.kinect_joint_selection_dialog import KinectJointSelectionDialog
+from ui.windows.config_window import ConfigWindow
 from ui.windows.menu_window import MenuWindow
 from ui.windows.movement_testing_window import MovementTestingWindow
 from ui.windows.registration_window import RegistrationWindow
@@ -24,37 +26,36 @@ class AppStates(Enum):
     MENU = 0,
     REGISTRATION = 1,
     CLASSIFICATION = 2,
-    TESTING = 3
+    TESTING = 3,
+    CONFIG = 4
 
 
 class AppManager(QWidget):
-    def __init__(self, source: SourceRegistry, recording_path):
+    def __init__(self, config_repository: ConfigRepository):
         """
         Initialize an AppManager object.
-        :param source: source that defines how the joints are processed
-        :type source: SourceRegistry
-        :param recording_path: path to a directory where recordings are uploaded
-        :type recording_path: str
         """
         super().__init__()
-        self._allow_inferred = True
-        self._dynamic_tracking = True
-        self._movement_activity_detection = True
+        self.config_repository = config_repository
+        self.config = config_repository.load()
+        source = SourceRegistry[self.config.source_config.source]
+        src_conf, rec_conf = self.config.source_config, self.config.recording_config
         if source == SourceRegistry.KINECT:
-            self.skeleton_renderer = KinectSkeletonRenderer(self._allow_inferred)
+            self.skeleton_renderer = KinectSkeletonRenderer(src_conf.allow_inferred)
             self.source = KinectSource()
             self.skeleton_model = KinectSkeletonModel()
-        self.joint_selection_map = self.skeleton_model.generate_joint_selection_map()
+        self.joint_selection_map = self._get_joints_map_from_config()
         self.setWindowTitle("Movement dynamics biometrics")
 
         self.stack = QStackedWidget()
 
-        self.biometric_system = BiometricSystem(self.skeleton_model, self._allow_inferred)
-        self.source_controller = SourceController(self.source, self.skeleton_renderer, self._dynamic_tracking,
-                                                  self._allow_inferred, self.joint_selection_map)
+        self.biometric_system = BiometricSystem(self.skeleton_model, src_conf.allow_inferred)
+        self.source_controller = SourceController(self.source, self.skeleton_renderer, src_conf.dynamic_tracking,
+                                                  src_conf.allow_inferred, self.joint_selection_map)
 
-        self.recording_repository = JsonRecordingRepository(recording_path)
-        self.recording_controller = RecordingController(self.source_controller, self.recording_repository, 5, self._movement_activity_detection)
+        self.recording_repository = JsonRecordingRepository(rec_conf.directory)
+        self.recording_controller = RecordingController(self.source_controller, self.recording_repository)
+        self.recording_controller.configure(rec_conf)
 
         self.recording_controller.recording_finished.connect(self.handle_recording_finish)
         self.menu_window = MenuWindow(self)
@@ -63,6 +64,7 @@ class AppManager(QWidget):
         self.registration_window = None
         self.classification_window = None
         self.classification_results_page = None
+        self.config_window = None
 
         self.stack.addWidget(self.menu_window)
 
@@ -161,16 +163,29 @@ class AppManager(QWidget):
         self.stack.setCurrentWidget(self.classification_window)
         self._app_state = AppStates.CLASSIFICATION
 
+    def show_config_window(self):
+        """
+        Sets currently displayed window to Configuration window and changes app's state to AppStates.CONFIG
+        """
+        if self._is_recording_active():
+            return
+        self.source_controller.source.close()
+        if self.config_window is None:
+            self.config_window = ConfigWindow(self)
+            self.config_window.load_values(self.config)
+            self.stack.addWidget(self.config_window)
+        self.stack.setCurrentWidget(self.config_window)
+        self._app_state = AppStates.CONFIG
     def get_new_frame(self):
         """
         Receives new frame from a source controller and passes it to recording controller, if currently recording.
         :return: New color frame received from source controller.
         :rtype: ndarray
         """
-        new_frame = self.source_controller.update_frame(self._dynamic_tracking)
+        new_frame = self.source_controller.update_frame(self.config.source_config.dynamic_tracking)
         if self.recording_controller.is_recording():
             body = self.source_controller.get_joints_as_skeleton_frame()
-            if not self._dynamic_tracking:
+            if not self.config.source_config.dynamic_tracking:
                 self.source_controller.get_joints_data()
             joints_2d = self.source_controller.get_joints_2d_selected()
             self.recording_controller.add_frames(body, joints_2d)
@@ -220,11 +235,44 @@ class AppManager(QWidget):
         if self._is_recording_active():
             return
         joint_translation_map = self.skeleton_model.get_joint_translation_map()
-        bones_translation_map = self.skeleton_model.get_bones_translation_map()
-        dlg = KinectJointSelectionDialog(joint_translation_map, dict(self.joint_selection_map), bones_translation_map)
+        segment_joints_map = self.skeleton_model.get_segment_joints_map()
+        dlg = KinectJointSelectionDialog(joint_translation_map, dict(self.joint_selection_map), segment_joints_map)
         if dlg.exec():
             self.joint_selection_map = dlg.get_joint_selection_map()
             self.source_controller.set_joint_selection_map(self.joint_selection_map)
-
+            self.config.joint_selection_map = {}
+            for joint, selected in self.joint_selection_map.items():
+                self.config.joint_selection_map[joint.name] = selected
+            self.config_repository.save(self.config)
     def get_fps_range(self):
         return [self.source_controller.min_fps, self.source_controller.max_fps]
+
+    def _get_joints_map_from_config(self):
+        selection = self.skeleton_model.generate_joint_selection_map()
+        for joint in selection:
+            selection[joint] = self.config.joint_selection_map.get(joint.name, True)
+        return selection
+
+
+    def apply_config(self, config: AppConfig):
+        if self._is_recording_active():
+            raise RuntimeError("Cannot change configuration while recording")
+        if config.source_config.source != self.config.source_config.source:
+            need_restart = True
+        else:
+            need_restart = False
+        self.config = config
+        src_conf, rec_conf = config.source_config, config.recording_config
+
+        self.skeleton_renderer.set_allow_inferred(src_conf.allow_inferred)
+        self.biometric_system.set_allow_inferred(src_conf.allow_inferred)
+        self.source_controller.configure(allow_inferred=src_conf.allow_inferred, dynamic_tracking=src_conf.dynamic_tracking)
+        self.skeleton_renderer.configure(src_conf.allow_inferred)
+        self.recording_repository.set_directory(rec_conf.directory)
+        self.recording_controller.configure(rec_conf)
+        windows = [self.movement_testing_window, self.registration_window]
+        for window in windows:
+            if window is not None:
+                window.set_fps(config.display_config.fps)
+        self.config_repository.save(config)
+        return need_restart

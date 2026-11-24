@@ -18,8 +18,7 @@ class RegistrationWindow(QWidget):
         self.username = None
         self.action = None
         self.layout = QVBoxLayout()
-        self.fps = 30
-
+        self.fps = self.app_manager.config.display_config.fps
         self.get_user_input()
         self.generate_layout()
         self.assign_behavior()
@@ -35,28 +34,32 @@ class RegistrationWindow(QWidget):
         self.layout.addWidget(self.btn_menu)
 
         self.setLayout(self.layout)
+        self.image_label.setObjectName("cameraView")
+        self.text.setObjectName("featuresView")
+        self.status_label.setObjectName("statusLabel")
+
     def generate_config_panel(self):
 
         top_bar = QHBoxLayout()
         top_bar.setSpacing(6)
-
-        fps_label = QLabel("FPS:")
-        fps_label.setFixedWidth(30)
-
-        self.fps_input = QSpinBox()
-        self.fps_input.setValue(30)
-        fps_min, fps_max = self.get_fps_range()
-        self.fps_input.setRange(fps_min, fps_max)
-        self.fps_input.setFixedWidth(100)
-
-        top_bar.addWidget(fps_label)
-        top_bar.addWidget(self.fps_input)
-        self.btn_apply_fps = QPushButton("OK")
+        #
+        # fps_label = QLabel("FPS:")
+        # fps_label.setFixedWidth(30)
+        #
+        # self.fps_input = QSpinBox()
+        # self.fps_input.setValue(30)
+        # fps_min, fps_max = self.get_fps_range()
+        # self.fps_input.setRange(fps_min, fps_max)
+        # self.fps_input.setFixedWidth(100)
+        #
+        # top_bar.addWidget(fps_label)
+        # top_bar.addWidget(self.fps_input)
+        # self.btn_apply_fps = QPushButton("OK")
         self.btn_start = QPushButton("Start")
         self.btn_stop = QPushButton("Stop")
 
         for btn in [
-            self.btn_apply_fps,
+            # self.btn_apply_fps,
             self.btn_start,
             self.btn_stop,
         ]:
@@ -132,17 +135,15 @@ class RegistrationWindow(QWidget):
         self.status_timer = QTimer()
         self.status_timer.timeout.connect(self.refresh_tracking_status)
         self.status_timer.start(1000)
-        self.btn_apply_fps.clicked.connect(self.set_fps)
+        # self.btn_apply_fps.clicked.connect(self.set_fps)
         self.btn_stop.clicked.connect(self.stop_source)
         self.btn_start.clicked.connect(self.start_source)
         self.btn_record_start.clicked.connect(self.record_start)
         self.btn_record_stop.clicked.connect(self.record_stop)
-    def set_fps(self):
-        try:
-            self.fps = int(self.fps_input.value())
+
+    def set_fps(self, fps):
+            self.fps = fps
             self.timer.setInterval(1000 // self.fps)
-        except:
-            print("Wrong fps value")
     def get_fps_range(self):
         return self.app_manager.get_fps_range()
 
@@ -161,7 +162,7 @@ class RegistrationWindow(QWidget):
         self.btn_record_stop.setEnabled(locked)
         self.btn_start.setEnabled(not locked)
         self.btn_stop.setEnabled(not locked)
-        self.btn_apply_fps.setEnabled(not locked)
+        # self.btn_apply_fps.setEnabled(not locked)
         self.btn_menu.setEnabled(not locked)
     def refresh(self):
         self.refresh_frame()

@@ -12,7 +12,11 @@ class JsonRecordingRepository:
     def __init__(self, directory: str):
         self.directory = directory
 
+    def set_directory(self, directory):
+        os.makedirs(directory, exist_ok=True)
+        self.directory = directory
     def save(self, recording):
+        os.makedirs(self.directory, exist_ok=True)
         path = f"{self.directory}/{recording.recording_id}.json"
         with open(path, "w") as file:
             json.dump(

@@ -24,6 +24,10 @@ class SourceController:
         self._dynamic_tracking = dynamic_tracking
         self._allow_inferred = allow_inferred
         self.set_joint_selection_map(joint_selection_map)
+
+    def configure(self, allow_inferred, dynamic_tracking):
+        self._allow_inferred = allow_inferred
+        self._dynamic_tracking = dynamic_tracking
     def set_source(self, source: ISource):
         self.source = source
     def is_dynamic_tracking_on(self):

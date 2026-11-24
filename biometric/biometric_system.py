@@ -14,3 +14,6 @@ class BiometricSystem:
         return self.feature_extractor.get_angles()
     def get_joint_cords_normalized(self):
         return self.feature_extractor.get_joint_cords_normalized()
+
+    def set_allow_inferred(self, allow_inferred):
+        self.feature_extractor.configure(allow_inferred)

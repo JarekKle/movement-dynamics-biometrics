@@ -22,7 +22,7 @@ class MovementTestingWindow(QWidget):
     def __init__(self, app_manager):
         super().__init__()
         self.app_manager = app_manager
-        self.fps = 30
+        self.fps = self.app_manager.config.display_config.fps
         self.layout = QVBoxLayout()
         self.display_option = MeasurementTypes.CORDS_NORMALIZED
         self.btn_menu = QPushButton("Menu Window")
@@ -33,40 +33,45 @@ class MovementTestingWindow(QWidget):
         self.generate_layout()
         self.assign_behavior()
         self.setLayout(self.layout)
-        # TODO move to an appropriate function
+
+        self.image_label.setObjectName("cameraView")
+        self.text.setObjectName("featuresView")
+        self.status_label.setObjectName("statusLabel")
+    def generate_layout(self):
+        self.generate_config_panel()
+        self.generate_camera_panel()
+        self.generate_status_label()
+        self.generate_features_panel()
+
+    def generate_status_label(self):
         self.status_label = QLabel("Initializing source...")
         self.status_label.setFixedHeight(15)
         self.layout.addWidget(self.status_label)
         self.update_status_label(TrackingStatus.SOURCE_DISCONNECTED,RecordingState.NOT_RECORDING,0)
-    def generate_layout(self):
-        self.generate_config_panel()
-        self.generate_camera_panel()
-        self.generate_features_panel()
-
     def generate_config_panel(self):
 
         top_bar = QHBoxLayout()
         top_bar.setSpacing(6)
-
-        fps_label = QLabel("FPS:")
-        fps_label.setFixedWidth(30)
-
-        self.fps_input = QSpinBox()
-        self.fps_input.setValue(30)
-        fps_min, fps_max = self.get_fps_range()
-        self.fps_input.setRange(fps_min, fps_max)
-        self.fps_input.setFixedWidth(100)
-
-        top_bar.addWidget(fps_label)
-        top_bar.addWidget(self.fps_input)
-        self.btn_apply_fps = QPushButton("OK")
+        #
+        # fps_label = QLabel("FPS:")
+        # fps_label.setFixedWidth(30)
+        #
+        # self.fps_input = QSpinBox()
+        # self.fps_input.setValue(30)
+        # fps_min, fps_max = self.get_fps_range()
+        # self.fps_input.setRange(fps_min, fps_max)
+        # self.fps_input.setFixedWidth(100)
+        #
+        # top_bar.addWidget(fps_label)
+        # top_bar.addWidget(self.fps_input)
+        # self.btn_apply_fps = QPushButton("OK")
         self.btn_start = QPushButton("Start")
         self.btn_stop = QPushButton("Stop")
         self.btn_open = QPushButton("Open")
         self.btn_close = QPushButton("Close")
 
         for btn in [
-            self.btn_apply_fps,
+            # self.btn_apply_fps,
             self.btn_start,
             self.btn_stop,
             self.btn_open,
@@ -94,7 +99,6 @@ class MovementTestingWindow(QWidget):
             btn.setFixedHeight(28)
             top_bar.addWidget(btn)
 
-        top_bar.addWidget(self.dynamic_display_checkbox)
 
 
         # Movement select
@@ -150,7 +154,6 @@ class MovementTestingWindow(QWidget):
         content_layout.setSpacing(10)
 
         self.image_label = CameraLabel()
-        self.image_label.setFixedSize(700, 520)
         self.image_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.image_label.setStyleSheet("""
             background: #222;
@@ -180,6 +183,9 @@ class MovementTestingWindow(QWidget):
 
         self.features_container.addWidget(self.text)
 
+        self.image_label.setObjectName("cameraView")
+        self.text.setObjectName("featuresView")
+        self.status_label.setObjectName("statusLabel")
 
 
     def assign_behavior(self):
@@ -189,7 +195,7 @@ class MovementTestingWindow(QWidget):
         self.status_timer = QTimer()
         self.status_timer.timeout.connect(self.refresh_tracking_status)
         self.status_timer.start(1000)
-        self.btn_apply_fps.clicked.connect(self.set_fps)
+        # self.btn_apply_fps.clicked.connect(self.set_fps)
         self.btn_stop.clicked.connect(self.stop_source)
         self.btn_start.clicked.connect(self.start_source)
         self.btn_open.clicked.connect(self.open_source)
@@ -199,12 +205,9 @@ class MovementTestingWindow(QWidget):
 
         self.btn_joint_select.clicked.connect(self.select_joints)
 
-    def set_fps(self):
-        try:
-            self.fps = int(self.fps_input.value())
+    def set_fps(self, fps):
+            self.fps = fps
             self.timer.setInterval(1000 // self.fps)
-        except:
-            print("Wrong fps value")
     def get_fps_range(self):
         return self.app_manager.get_fps_range()
     def stop_source(self):
@@ -226,7 +229,7 @@ class MovementTestingWindow(QWidget):
     def set_recording_controls_locked(self, locked):
         self.btn_record_start.setEnabled(not locked)
         self.btn_record_stop.setEnabled(locked)
-        self.btn_apply_fps.setEnabled(not locked)
+        # self.btn_apply_fps.setEnabled(not locked)
         self.btn_stop.setEnabled(not locked)
         self.btn_start.setEnabled(not locked)
         self.btn_clear.setEnabled(not locked)

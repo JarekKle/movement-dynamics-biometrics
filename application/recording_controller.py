@@ -4,6 +4,7 @@ import time
 
 from PyQt6.QtCore import QTimer, QObject, pyqtSignal
 
+from application.app_config import RecordingConfig
 from domain.recording.recording_state import RecordingState
 from domain.recording.skeleton_image_recording import SkeletonImageRecording
 from domain.recording.skeleton_recording import SkeletonRecording
@@ -11,38 +12,48 @@ from domain.recording.skeleton_recording import SkeletonRecording
 
 class RecordingController(QObject):
     recording_finished = pyqtSignal(object, object)
-    def __init__(self, source_controller, repository, sample_rate, movement_activity_detection, parent=None):
+
+    def __init__(self, source_controller, repository, parent=None):
         super().__init__(parent)
         self.still_frames = 0
         self.still_anchor = None
         self.remaining_seconds = 0
         self.timer = QTimer(self)
-        self.state_reset_timer = QTimer(self)
         self.timer.setInterval(1000)
-        self.state_reset_timer.setInterval(5000)
+        self.state_reset_timer = QTimer(self)
         self.timer.timeout.connect(self.on_second_passed)
         self.state_reset_timer.timeout.connect(self.on_state_reset)
         self.source_controller = source_controller
-        self.state = RecordingState.NOT_RECORDING
         self.repository = repository
-        self.sample_rate = sample_rate
-        self.countdown_seconds = 5
+        self.state = RecordingState.NOT_RECORDING
         self.recording = None
         self.skeleton_image_recording = None
         self.next_sample_time = None
         self.start_time = None
-        self.movement_activity_detection = movement_activity_detection
-        self.still_movement_duration_threshold = 2.0
         self.current_still_movement_duration = 0.0
         self.still_movement_start_time = None
         self.last_movement_time = None
-        self.joint_movement_threshold = 0.1
-        self.active_joint_ratio_threshold = 0.1
-        self.min_frames = self.sample_rate
-        self.max_missing_seconds = 0
         self.last_missing_time = None
+        self.configure(RecordingConfig())
 
-
+        self.sample_rate: float
+        self.countdown_seconds: int
+        self.movement_activity_detection: bool
+        self.still_movement_duration_threshold: float
+        self.joint_movement_threshold: float
+        self.active_joint_ratio_threshold: float
+        self.min_frames: float
+        self.max_missing_seconds: float
+    def configure(self, cfg: RecordingConfig):
+        self.sample_rate = cfg.sample_rate
+        self.countdown_seconds = cfg.countdown_seconds
+        self.movement_activity_detection = cfg.movement_activity_detection
+        self.still_movement_duration_threshold = cfg.still_movement_duration_threshold
+        self.joint_movement_threshold = cfg.joint_movement_threshold
+        self.active_joint_ratio_threshold = cfg.active_joint_ratio_threshold
+        self.max_missing_seconds = cfg.max_missing_seconds
+        self.min_frames = max(1, round(cfg.min_recording_seconds * cfg.sample_rate))
+        self.state_reset_timer.setInterval(int(cfg.result_display_seconds * 1000))
     def is_recording(self):
         return self.state == RecordingState.RECORDING
 
