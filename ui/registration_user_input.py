@@ -27,10 +27,11 @@ class RegistrationUserInput(QDialog):
         name, ok = QInputDialog.getText(self,"Enter movement name","Movement name (ex. left hand wave, running in place):")
         if not ok:
             return
+        name = name.strip()
         if not name:
             QMessageBox.warning(self, "Invalid name", "Please provide a movement name.")
             return
-        self.movement_name = name.strip()
+        self.movement_name = name
         self.action = RecordingAction.REGISTER
         self.accept()
         self.ask_for_enabled_joints()
@@ -41,9 +42,10 @@ class RegistrationUserInput(QDialog):
         username, ok = QInputDialog.getText(self,"Enter your username","Your username:")
         if not ok:
             return
+        username = username.strip()
         if not username:
             QMessageBox.warning(self, "Invalid username", "Please provide your username.")
             return
-        self.username = username.strip()
+        self.username = username
         self.action = RecordingAction.RECREATE
         self.accept()

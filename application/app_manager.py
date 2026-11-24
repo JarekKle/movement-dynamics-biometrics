@@ -1,14 +1,17 @@
 from __future__ import annotations
 
+from datetime import datetime
 from enum import Enum
 
 from PyQt6.QtWidgets import QStackedWidget, QWidget, QVBoxLayout
 
 from application.app_config import ConfigRepository, AppConfig
+from application.movement_pattern_repository import MovementPatternRepository
 from biometric.biometric_system import BiometricSystem
 from domain.movement.kinect.kinect_skeleton_model import KinectSkeletonModel
 from application.json_recording_repository import JsonRecordingRepository
 from application.recording_controller import RecordingController
+from domain.recording.movement_pattern import MovementPattern
 from domain.recording.recording_state import RecordingState
 from sources.kinect.kinect_skeleton_renderer import KinectSkeletonRenderer
 from sources.kinect.kinect_source import KinectSource
@@ -54,6 +57,7 @@ class AppManager(QWidget):
                                                   src_conf.allow_inferred, self.joint_selection_map)
 
         self.recording_repository = JsonRecordingRepository(rec_conf.directory)
+        self.movement_pattern_repository = MovementPatternRepository(rec_conf.directory)
         self.recording_controller = RecordingController(self.source_controller, self.recording_repository)
         self.recording_controller.configure(rec_conf)
 
@@ -74,14 +78,14 @@ class AppManager(QWidget):
 
     def _is_recording_active(self):
         return self.get_recording_status() in (RecordingState.COUNTING_DOWN, RecordingState.RECORDING)
-    def start_recording(self):
+    def start_recording(self, metadata=None):
         """
         Activate a method in the recording controller to start recording.
         :return:
         """
         if self.recording_controller.is_recording():
             return
-        self.recording_controller.start_recording()
+        self.recording_controller.start_recording(metadata)
 
     def stop_recording(self):
         """
@@ -91,6 +95,9 @@ class AppManager(QWidget):
         """
         self.recording_controller.stop_recording()
     def handle_recording_finish(self, recording, skeleton_image_recording=None):
+        if self._app_state == AppStates.REGISTRATION and self.registration_window is not None:
+            self.registration_window.handle_recording_finish(recording, skeleton_image_recording)
+            return
         self.save_recording(recording)
         if skeleton_image_recording is not None:
             self.save_recording(skeleton_image_recording)
@@ -145,10 +152,12 @@ class AppManager(QWidget):
         """
         Sets currently displayed window to Registration window and changed app's state to AppStates.REGISTRATION
         """
-        self.source_controller.source.open()
         if self.registration_window is None:
             self.registration_window = RegistrationWindow(self)
             self.stack.addWidget(self.registration_window)
+        if not self.registration_window.get_user_input():
+            return
+        self.source_controller.source.open()
         self.stack.setCurrentWidget(self.registration_window)
         self._app_state = AppStates.REGISTRATION
 
@@ -269,6 +278,7 @@ class AppManager(QWidget):
         self.source_controller.configure(allow_inferred=src_conf.allow_inferred, dynamic_tracking=src_conf.dynamic_tracking)
         self.skeleton_renderer.configure(src_conf.allow_inferred)
         self.recording_repository.set_directory(rec_conf.directory)
+        self.movement_pattern_repository.set_directory(rec_conf.directory)
         self.recording_controller.configure(rec_conf)
         windows = [self.movement_testing_window, self.registration_window]
         for window in windows:
@@ -276,3 +286,35 @@ class AppManager(QWidget):
                 window.set_fps(config.display_config.fps)
         self.config_repository.save(config)
         return need_restart
+
+    def get_joint_tracking_states(self):
+        joints_raw = self.source_controller.source.get_joints_raw()
+        if joints_raw is None:
+            return None
+        joint_states = {}
+        for joint, joint_cords in joints_raw.items():
+            joint_states[joint] = int(joint_cords[1])
+        return joint_states
+
+    def is_movement_pattern_registered(self, movement_name):
+        return self.movement_pattern_repository.contains(movement_name)
+
+    def get_movement_pattern_count(self):
+        return self.movement_pattern_repository.get_pattern_count()
+
+    def register_movement_pattern(self, movement_name, recording, skeleton_image_recording):
+        if self.movement_pattern_repository.contains(movement_name):
+            raise ValueError(f"Movement pattern '{movement_name}' is already registered.")
+        self.save_recording(recording)
+        self.save_recording(skeleton_image_recording)
+        pattern = MovementPattern(
+            movement_name=movement_name,
+            recording_file=f"{recording.recording_id}.json",
+            image_recording_file=f"{skeleton_image_recording.recording_id}.json",
+            joints=list(recording.metadata.get("joints", [])),
+            sample_rate=recording.sample_rate,
+            frame_count=len(recording.frames),
+            registered_at=datetime.now().isoformat(timespec="seconds")
+        )
+        self.movement_pattern_repository.add_pattern(pattern)
+        return self.movement_pattern_repository.get_pattern_count()

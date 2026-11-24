@@ -5,7 +5,7 @@ from enum import Enum
 import numpy as np
 from PyQt6.QtCore import Qt, QTimer
 from PyQt6.QtWidgets import QHBoxLayout, QTextEdit, QRadioButton, \
-    QLineEdit, QButtonGroup, QCheckBox, QSpinBox
+    QLineEdit, QButtonGroup, QCheckBox, QSpinBox, QSizePolicy, QGroupBox
 from PyQt6.QtWidgets import QWidget, QPushButton, QVBoxLayout, QLabel
 
 from domain.recording.recording_state import RecordingState
@@ -45,70 +45,42 @@ class MovementTestingWindow(QWidget):
 
     def generate_status_label(self):
         self.status_label = QLabel("Initializing source...")
-        self.status_label.setFixedHeight(15)
         self.layout.addWidget(self.status_label)
         self.update_status_label(TrackingStatus.SOURCE_DISCONNECTED,RecordingState.NOT_RECORDING,0)
     def generate_config_panel(self):
+        src_box = QGroupBox("Source")
+        src_row = QHBoxLayout(src_box)
 
-        top_bar = QHBoxLayout()
-        top_bar.setSpacing(6)
-        #
-        # fps_label = QLabel("FPS:")
-        # fps_label.setFixedWidth(30)
-        #
-        # self.fps_input = QSpinBox()
-        # self.fps_input.setValue(30)
-        # fps_min, fps_max = self.get_fps_range()
-        # self.fps_input.setRange(fps_min, fps_max)
-        # self.fps_input.setFixedWidth(100)
-        #
-        # top_bar.addWidget(fps_label)
-        # top_bar.addWidget(self.fps_input)
-        # self.btn_apply_fps = QPushButton("OK")
         self.btn_start = QPushButton("Start")
         self.btn_stop = QPushButton("Stop")
         self.btn_open = QPushButton("Open")
         self.btn_close = QPushButton("Close")
 
         for btn in [
-            # self.btn_apply_fps,
             self.btn_start,
             self.btn_stop,
             self.btn_open,
             self.btn_close
         ]:
-            btn.setFixedHeight(28)
-            btn.setMinimumWidth(65)
-            top_bar.addWidget(btn)
+            src_row.addWidget(btn)
 
-        # Recording
+        rec_box = QGroupBox("Recording")
+        rec_row = QHBoxLayout(rec_box)
         self.btn_record_start = QPushButton("Rec")
         self.btn_record_stop = QPushButton("Stop Rec")
         self.btn_record_stop.setEnabled(False)
-        self.btn_clear = QPushButton("Clear")
-        self.btn_exit = QPushButton("Exit")
         self.btn_joint_select = QPushButton("Select joints")
 
         for btn in [
             self.btn_record_start,
             self.btn_record_stop,
-            self.btn_clear,
-            self.btn_exit,
-            self.btn_joint_select
+            self.btn_joint_select,
         ]:
-            btn.setFixedHeight(28)
-            top_bar.addWidget(btn)
+            rec_row.addWidget(btn)
 
+        mode_box = QGroupBox("View")
+        mode_row = QHBoxLayout(mode_box)
 
-
-        # Movement select
-
-        top_bar.addStretch()
-
-        self.layout.addLayout(top_bar)
-
-        mode_bar = QHBoxLayout()
-        mode_bar.setSpacing(12)
 
         self.coord_group = QButtonGroup()
 
@@ -140,13 +112,17 @@ class MovementTestingWindow(QWidget):
         self.coord_group.addButton(self.radio_norm)
         self.coord_group.addButton(self.radio_angles)
 
-        mode_bar.addWidget(QLabel("View:"))
-        mode_bar.addWidget(self.radio_raw)
-        mode_bar.addWidget(self.radio_norm)
-        mode_bar.addWidget(self.radio_angles)
-        mode_bar.addStretch()
+        mode_row.addWidget(self.radio_raw)
+        mode_row.addWidget(self.radio_norm)
+        mode_row.addWidget(self.radio_angles)
 
-        self.layout.addLayout(mode_bar)
+
+        top_bar = QHBoxLayout()
+        top_bar.addWidget(src_box)
+        top_bar.addWidget(rec_box)
+        top_bar.addWidget(mode_box)
+        top_bar.addStretch()
+        self.layout.addLayout(top_bar)
 
     def generate_camera_panel(self):
 
@@ -155,37 +131,22 @@ class MovementTestingWindow(QWidget):
 
         self.image_label = CameraLabel()
         self.image_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        self.image_label.setStyleSheet("""
-            background: #222;
-            color: white;
-            border: 1px solid #444;
-        """)
-
-        content_layout.addWidget(self.image_label)
+        self.image_label.setMinimumSize(320, 180)
+        self.image_label.setSizePolicy(QSizePolicy.Policy.Ignored, QSizePolicy.Policy.Ignored)
+        content_layout.addWidget(self.image_label, stretch=3)
 
         self.features_container = content_layout
-        self.layout.addLayout(content_layout)
+        self.layout.addLayout(content_layout, stretch=1)
 
     def generate_features_panel(self):
 
         self.text = QTextEdit()
         self.text.setReadOnly(True)
-        self.text.setFixedSize(440, 520)
 
-        self.text.setStyleSheet("""
-            background: #111;
-            color: #DDD;
-            border: 1px solid #444;
-            padding: 6px;
-            font-family: Consolas;
-            font-size: 12px;
-        """)
+        self.text.setMinimumWidth(260)
 
         self.features_container.addWidget(self.text)
 
-        self.image_label.setObjectName("cameraView")
-        self.text.setObjectName("featuresView")
-        self.status_label.setObjectName("statusLabel")
 
 
     def assign_behavior(self):
@@ -232,9 +193,7 @@ class MovementTestingWindow(QWidget):
         # self.btn_apply_fps.setEnabled(not locked)
         self.btn_stop.setEnabled(not locked)
         self.btn_start.setEnabled(not locked)
-        self.btn_clear.setEnabled(not locked)
         self.btn_close.setEnabled(not locked)
-        self.btn_exit.setEnabled(not locked)
         self.btn_joint_select.setEnabled(not locked)
         self.btn_open.setEnabled(not locked)
         self.btn_menu.setEnabled(not locked)

@@ -7,6 +7,7 @@ from domain.movement.kinect.kinect_skeleton_model import KinectSkeletonModel
 from sources.kinect.kinect_source import KinectSource
 from sources.source_registry import SourceRegistry
 from application.app_manager import AppManager
+from ui.theme import apply_dark_theme
 
 
 def start_kinect():
@@ -29,6 +30,7 @@ import sys
 # sys.setprofile(tracefunc)
 def start_window():
     app = QApplication(sys.argv)
+    apply_dark_theme(app)
     window = AppManager(ConfigRepository("config.json"))
     window.show()
     window.showMaximized()

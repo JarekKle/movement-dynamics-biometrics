@@ -8,6 +8,7 @@ from PyQt6.QtWidgets import QLabel
 class CameraLabel(QLabel):
     def __init__(self):
         super().__init__()
+        self._last_image = None
 
     def refresh_frame(self, frame):
         self.update_frame(frame)
@@ -27,8 +28,12 @@ class CameraLabel(QLabel):
         )
 
     def update_frame(self, original: np.ndarray):
+        self._last_image = original
         self._set_label_image(original)
-
+    def resizeEvent(self, event):
+        super().resizeEvent(event)
+        if self._last_image is not None:
+            self._set_label_image(self._last_image)
     def _set_label_image(self, image: np.ndarray):
         rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
         h, w, ch = rgb.shape
