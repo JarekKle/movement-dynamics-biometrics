@@ -15,6 +15,8 @@ class SourceController:
         self._body = None
         self._frame = None
         self.fps = None
+        self.min_fps = 5
+        self.max_fps = 30
         self.frame_number = 0
         self.tracking_status = TrackingStatus.SOURCE_DISCONNECTED
         self.source = source
@@ -36,6 +38,8 @@ class SourceController:
         self._joints_raw = self.source.get_joints_raw()
         self._joints2d = self.source.joints_2d()
     def get_joints_2d_selected(self):
+        if self._joints2d is None:
+            return None
         joints_2d_selected = []
         for i in range(len(self._joints2d)):
             if self.joint_selection_map[i]:
@@ -48,6 +52,8 @@ class SourceController:
 
     def get_joints_as_skeleton_frame(self):
         self._joints_raw = self.source.get_joints_raw()
+        if not self._joints_raw:
+            return None
         joint_positions = {}
         for joint_name, joint_cords in self._joints_raw.items():
             if self.joint_selection_map[joint_name]:

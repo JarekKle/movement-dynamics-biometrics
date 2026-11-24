@@ -225,3 +225,6 @@ class AppManager(QWidget):
         if dlg.exec():
             self.joint_selection_map = dlg.get_joint_selection_map()
             self.source_controller.set_joint_selection_map(self.joint_selection_map)
+
+    def get_fps_range(self):
+        return [self.source_controller.min_fps, self.source_controller.max_fps]

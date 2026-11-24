@@ -5,7 +5,7 @@ from enum import Enum
 import numpy as np
 from PyQt6.QtCore import Qt, QTimer
 from PyQt6.QtWidgets import QHBoxLayout, QTextEdit, QRadioButton, \
-    QLineEdit, QButtonGroup, QCheckBox
+    QLineEdit, QButtonGroup, QCheckBox, QSpinBox
 from PyQt6.QtWidgets import QWidget, QPushButton, QVBoxLayout, QLabel
 
 from domain.recording.recording_state import RecordingState
@@ -22,7 +22,6 @@ class MovementTestingWindow(QWidget):
     def __init__(self, app_manager):
         super().__init__()
         self.app_manager = app_manager
-        self.dynamic_display = False
         self.fps = 30
         self.layout = QVBoxLayout()
         self.display_option = MeasurementTypes.CORDS_NORMALIZED
@@ -52,9 +51,11 @@ class MovementTestingWindow(QWidget):
         fps_label = QLabel("FPS:")
         fps_label.setFixedWidth(30)
 
-        self.fps_input = QLineEdit()
-        self.fps_input.setPlaceholderText("30")
-        self.fps_input.setFixedWidth(55)
+        self.fps_input = QSpinBox()
+        self.fps_input.setValue(30)
+        fps_min, fps_max = self.get_fps_range()
+        self.fps_input.setRange(fps_min, fps_max)
+        self.fps_input.setFixedWidth(100)
 
         top_bar.addWidget(fps_label)
         top_bar.addWidget(self.fps_input)
@@ -92,8 +93,6 @@ class MovementTestingWindow(QWidget):
         ]:
             btn.setFixedHeight(28)
             top_bar.addWidget(btn)
-        self.dynamic_display_checkbox = QCheckBox(text="Dynamic display")
-        self.dynamic_display_checkbox.stateChanged.connect(self.onStateChanged)
 
         top_bar.addWidget(self.dynamic_display_checkbox)
 
@@ -145,8 +144,6 @@ class MovementTestingWindow(QWidget):
 
         self.layout.addLayout(mode_bar)
 
-    def onStateChanged(self):
-        self.dynamic_display = self.dynamic_display_checkbox.isChecked()
     def generate_camera_panel(self):
 
         content_layout = QHBoxLayout()
@@ -204,10 +201,12 @@ class MovementTestingWindow(QWidget):
 
     def set_fps(self):
         try:
-            self.fps = int(self.fps_input.text())
+            self.fps = int(self.fps_input.value())
             self.timer.setInterval(1000 // self.fps)
         except:
             print("Wrong fps value")
+    def get_fps_range(self):
+        return self.app_manager.get_fps_range()
     def stop_source(self):
         self.app_manager.stop_source()
     def start_source(self):

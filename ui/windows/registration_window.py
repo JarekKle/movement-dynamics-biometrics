@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import numpy as np
 from PyQt6.QtCore import Qt, QTimer
-from PyQt6.QtWidgets import QWidget, QPushButton, QVBoxLayout, QLabel, QHBoxLayout, QLineEdit, QTextEdit
+from PyQt6.QtWidgets import QWidget, QPushButton, QVBoxLayout, QLabel, QHBoxLayout, QLineEdit, QTextEdit, QSpinBox
 
 from domain.recording.recording_state import RecordingState
 from sources.tracking_status import TrackingStatus
@@ -43,9 +43,11 @@ class RegistrationWindow(QWidget):
         fps_label = QLabel("FPS:")
         fps_label.setFixedWidth(30)
 
-        self.fps_input = QLineEdit()
-        self.fps_input.setPlaceholderText("30")
-        self.fps_input.setFixedWidth(55)
+        self.fps_input = QSpinBox()
+        self.fps_input.setValue(30)
+        fps_min, fps_max = self.get_fps_range()
+        self.fps_input.setRange(fps_min, fps_max)
+        self.fps_input.setFixedWidth(100)
 
         top_bar.addWidget(fps_label)
         top_bar.addWidget(self.fps_input)
@@ -137,10 +139,13 @@ class RegistrationWindow(QWidget):
         self.btn_record_stop.clicked.connect(self.record_stop)
     def set_fps(self):
         try:
-            self.fps = int(self.fps_input.text())
+            self.fps = int(self.fps_input.value())
             self.timer.setInterval(1000 // self.fps)
         except:
             print("Wrong fps value")
+    def get_fps_range(self):
+        return self.app_manager.get_fps_range()
+
     def stop_source(self):
         self.app_manager.stop_source()
     def start_source(self):
