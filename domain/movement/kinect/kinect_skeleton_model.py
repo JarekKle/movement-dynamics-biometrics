@@ -71,6 +71,21 @@ class KinectSkeletonModel(ISkeletonModel):
             "Right leg": KinectBones.RIGHT_LEG,
             "Right foot": KinectBones.RIGHT_FOOT
         }
+        self._segment_joints_map = {
+            "Spine": [KinectJoints.HEAD, KinectJoints.NECK, KinectJoints.SPINE_SHOULDER,
+                      KinectJoints.SPINE_MID, KinectJoints.SPINE_BASE],
+            "Left arm": [KinectJoints.SHOULDER_LEFT, KinectJoints.ELBOW_LEFT],
+            "Left hand": [KinectJoints.WRIST_LEFT, KinectJoints.HAND_LEFT,
+                          KinectJoints.HAND_TIP_LEFT, KinectJoints.THUMB_LEFT],
+            "Right arm": [KinectJoints.SHOULDER_RIGHT, KinectJoints.ELBOW_RIGHT],
+            "Right hand": [KinectJoints.WRIST_RIGHT, KinectJoints.HAND_RIGHT,
+                           KinectJoints.HAND_TIP_RIGHT, KinectJoints.THUMB_RIGHT],
+            "Left leg": [KinectJoints.HIP_LEFT, KinectJoints.KNEE_LEFT],
+            "Left foot": [KinectJoints.ANKLE_LEFT, KinectJoints.FOOT_LEFT],
+            "Right leg": [KinectJoints.HIP_RIGHT, KinectJoints.KNEE_RIGHT],
+            "Right foot": [KinectJoints.ANKLE_RIGHT, KinectJoints.FOOT_RIGHT],
+        }
+
         self._joint_names_map = {value: name for name, value in self._joint_map.items()}
     def generate_joint_selection_map(self):
         joints = self.get_joints()
@@ -93,3 +108,5 @@ class KinectSkeletonModel(ISkeletonModel):
         return self._bones_translation_map
     def get_angles(self):
         return KinectAngles.get_angles()
+    def get_segment_joints_map(self):
+        return self._segment_joints_map

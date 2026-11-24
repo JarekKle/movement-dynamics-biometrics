@@ -10,6 +10,9 @@ from sources.iskeleton_renderer import ISkeletonRenderer
 class KinectSkeletonRenderer(ISkeletonRenderer):
     def __init__(self, allow_inferred: bool):
         self._allow_inferred = allow_inferred
+
+    def configure(self, allow_inferred):
+        self._allow_inferred = allow_inferred
     def is_joint_tracked(self, joint):
         return joint[1] == 2
     def is_joint_inferred(self, joint):
@@ -117,3 +120,6 @@ class KinectSkeletonRenderer(ISkeletonRenderer):
                     3
                 )
             return frame
+
+    def set_allow_inferred(self, allow_inferred):
+        self._allow_inferred = allow_inferred
