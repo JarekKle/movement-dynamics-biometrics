@@ -31,7 +31,7 @@ class RecordingController(QObject):
         self.skeleton_image_recording = None
         self.next_sample_time = None
         self.start_time = None
-        self.movement_activity_detection = True
+        self.movement_activity_detection = movement_activity_detection
         self.still_movement_duration_threshold = 2.0
         self.current_still_movement_duration = 0.0
         self.still_movement_start_time = None
@@ -39,6 +39,8 @@ class RecordingController(QObject):
         self.joint_movement_threshold = 0.1
         self.active_joint_ratio_threshold = 0.1
         self.min_frames = self.sample_rate
+        self.max_missing_seconds = 0
+        self.last_missing_time = None
 
 
     def is_recording(self):
@@ -61,6 +63,7 @@ class RecordingController(QObject):
             metadata=metadata or {}
         )
         self.change_state(RecordingState.COUNTING_DOWN)
+        self.last_missing_time = None
         self.start_time = time.time()
         self.next_sample_time = 0
         self.remaining_seconds = self.countdown_seconds
@@ -73,9 +76,10 @@ class RecordingController(QObject):
     def add_frames(self, frame, joints_2d):
         if not self.is_recording():
             return
-        if frame is None:
-            self.cancel_recording()
+        if frame is None or joints_2d is None:
+            self.handle_missing_frame()
             return
+        self.last_missing_time = None
         # if self.movement_activity_detection:
         #     self.determine_still_movement(frame)
         if not self.is_frame_time_valid():
@@ -90,6 +94,12 @@ class RecordingController(QObject):
             still_frames_limit = round(self.still_movement_duration_threshold*self.sample_rate)
             if self.still_frames >= still_frames_limit:
                 self.handle_still_movement()
+    def handle_missing_frame(self):
+        curr_time = time.time()
+        if self.last_missing_time is None:
+            self.last_missing_time = curr_time
+        if curr_time - self.last_missing_time >= self.max_missing_seconds:
+            self.cancel_recording()
     def update_stillness(self,frame):
         joint_activity = self.calculate_joint_activity(self.still_anchor, frame)
         if self.still_anchor is None or joint_activity >= self.active_joint_ratio_threshold:
@@ -124,13 +134,16 @@ class RecordingController(QObject):
     def calculate_joint_activity(self, old_frame, frame):
         joint_count = 0
         active_joints = 0
-        for i, (joint_name, cords) in enumerate(frame.joints.items()):
-            prev_joint = old_frame.joints[joint_name]
-            new_joint = frame.joints[joint_name]
-            dist = self.calculate_joint_distance(prev_joint,new_joint)
+        for joint_name, new_joint in frame.joints.items():
+            prev_joint = old_frame.joints.get(joint_name)
+            if prev_joint is None:
+                continue
             joint_count += 1
+            dist = self.calculate_joint_distance(prev_joint, new_joint)
             if dist > self.joint_movement_threshold:
                 active_joints += 1
+        if joint_count == 0:
+            return 1
         return active_joints / joint_count
 
     def handle_still_frame(self):
@@ -211,6 +224,7 @@ class RecordingController(QObject):
                 self.change_state(RecordingState.CANCELLED_RECORDING)
                 self.state_reset_timer.start()
                 return
+        self.timer.stop()
         self.change_state(RecordingState.RECORDING)
 
     def on_state_reset(self):

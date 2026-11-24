@@ -113,6 +113,8 @@ class FeatureExtractor:
         ])
 
     def calculate_angles(self):
+        if not self._joint_cords:
+            return None
         if len(self._joint_cords) == 0:
             return None
         angles = {}

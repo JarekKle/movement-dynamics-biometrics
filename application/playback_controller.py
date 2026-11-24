@@ -50,17 +50,18 @@ class PlaybackController:
         return self.skeleton_renderer.render_on_black_frame(
             skeleton_frame.joints
         )
-repository = JsonRecordingRepository("../recordings")
-renderer = KinectSkeletonRenderer(True)
-playback_controller = PlaybackController(repository,renderer)
+if __name__ == "__main__":
+    repository = JsonRecordingRepository("../recordings")
+    renderer = KinectSkeletonRenderer(True)
+    playback_controller = PlaybackController(repository,renderer)
 
-recording = playback_controller.load_recording(
-    "1f960dbf-e1e1-4844-a678-7c3fbfcfb0dbimage"
-)
-for i in range(len(recording.frames)):
-    frame = playback_controller.render_frame(i)
-    image = cv2.cvtColor(np.asarray(frame), cv2.COLOR_BGR2GRAY)
-    cv2.imshow("OpenCV image",image)
-    if cv2.waitKey(33) & 0xFF == ord('q'):
-        break
-cv2.destroyAllWindows()
+    recording = playback_controller.load_recording(
+        "1f960dbf-e1e1-4844-a678-7c3fbfcfb0dbimage"
+    )
+    for i in range(len(recording.frames)):
+        frame = playback_controller.render_frame(i)
+        image = cv2.cvtColor(np.asarray(frame), cv2.COLOR_BGR2GRAY)
+        cv2.imshow("OpenCV image",image)
+        if cv2.waitKey(33) & 0xFF == ord('q'):
+            break
+    cv2.destroyAllWindows()
