@@ -112,8 +112,12 @@ class RecordingController(QObject):
         if curr_time - self.last_missing_time >= self.max_missing_seconds:
             self.cancel_recording()
     def update_stillness(self,frame):
+        if self.still_anchor is None:
+            self.still_anchor = frame
+            self.still_frames = 0
+            return
         joint_activity = self.calculate_joint_activity(self.still_anchor, frame)
-        if self.still_anchor is None or joint_activity >= self.active_joint_ratio_threshold:
+        if joint_activity >= self.active_joint_ratio_threshold:
             self.still_anchor = frame
             self.still_frames = 0
         else:
