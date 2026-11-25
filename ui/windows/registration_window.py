@@ -178,6 +178,7 @@ class RegistrationWindow(QWidget):
 
     def update_status_label(self, source_status, recording_status, remaining_seconds):
         label_source_text = self._get_status_texts(remaining_seconds)
+        self.last_source_status = source_status
         self.status_label.setText(label_source_text.get(recording_status,
                                                         label_source_text.get(source_status,
                                                                               "Unknown status")))
