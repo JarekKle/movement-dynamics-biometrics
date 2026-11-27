@@ -2,6 +2,7 @@
 from PyQt6.QtWidgets import (QDialog,QPushButton,QVBoxLayout,QInputDialog,QMessageBox)
 
 from domain.recording.recording_action import RecordingAction
+from ui.sample_registration_form import SampleRegistrationForm
 
 
 class RegistrationUserInput(QDialog):
@@ -12,6 +13,8 @@ class RegistrationUserInput(QDialog):
         self.movement_name = None
         self.username = None
         self.action = None
+        self.pattern = None
+        self.sample_count = 1
 
         self.btn_register = QPushButton("Register new movement")
         self.btn_recreate = QPushButton("Recreate existing movement")
@@ -39,13 +42,22 @@ class RegistrationUserInput(QDialog):
         self.parent.select_joints()
 
     def ask_for_username(self):
-        username, ok = QInputDialog.getText(self,"Enter your username","Your username:")
-        if not ok:
+        app_manager = self.parent.app_manager
+        try:
+            patterns = app_manager.get_movement_patterns()
+        except ValueError as error:
+            QMessageBox.critical(self, "Movement pattern index", str(error))
             return
-        username = username.strip()
-        if not username:
-            QMessageBox.warning(self, "Invalid username", "Please provide your username.")
+        if not patterns:
+            QMessageBox.information(self, "No movement patterns",
+                                    "No movement pattern has been registered yet. Register a new movement first.")
             return
-        self.username = username
+        form = SampleRegistrationForm(patterns, app_manager.config.recording_config.samples_per_session, self)
+        if not form.exec():
+            return
+        self.username = form.get_username()
+        self.pattern = form.get_pattern()
+        self.movement_name = self.pattern.movement_name
+        self.sample_count = form.get_sample_count()
         self.action = RecordingAction.RECREATE
         self.accept()

@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import html
+from uuid import uuid4
+
 import numpy as np
 from PyQt6.QtCore import Qt, QTimer
 from PyQt6.QtWidgets import QWidget, QPushButton, QVBoxLayout, QLabel, QHBoxLayout, QLineEdit, QTextEdit, QSpinBox, \
@@ -25,6 +27,10 @@ class RegistrationWindow(QWidget):
         self.fps = self.app_manager.config.display_config.fps
         self.last_source_status = TrackingStatus.SOURCE_DISCONNECTED
         self._last_panel = None
+        self.pattern = None
+        self.sample_count = 1
+        self.samples = []
+        self.session_id = None
         self.generate_layout()
         self.assign_behavior()
 
@@ -71,11 +77,15 @@ class RegistrationWindow(QWidget):
         self.btn_record_stop = QPushButton("Stop Rec")
         self.btn_record_stop.setEnabled(False)
         self.btn_joint_select = QPushButton("Select joints")
+        self.btn_view_pattern = QPushButton("View pattern")
+        self.btn_finish = QPushButton("Finish (0/0)")
 
         for btn in [
             self.btn_record_start,
             self.btn_record_stop,
             self.btn_joint_select,
+            self.btn_view_pattern,
+            self.btn_finish
         ]:
             rec_row.addWidget(btn)
 
@@ -125,6 +135,8 @@ class RegistrationWindow(QWidget):
         self.btn_record_start.clicked.connect(self.record_start)
         self.btn_record_stop.clicked.connect(self.record_stop)
         self.btn_joint_select.clicked.connect(self.select_joints)
+        self.btn_view_pattern.clicked.connect(self.view_pattern)
+        self.btn_finish.clicked.connect(self.finish_session)
 
     def set_fps(self, fps):
             self.fps = fps
@@ -148,9 +160,18 @@ class RegistrationWindow(QWidget):
         # self.btn_apply_fps.setEnabled(not locked)
         self.btn_menu.setEnabled(not locked)
         self.btn_joint_select.setEnabled(not locked)
+        self.btn_view_pattern.setEnabled(not locked)
+        self.btn_finish.setEnabled(not locked and len(self.samples) > 0)
+
+
     def refresh(self):
+        import time
+        start = time.perf_counter()
         self.refresh_frame()
         self.update_tracking_panel()
+        elapsed = (time.perf_counter() - start) * 1000
+        if elapsed > 1000 / self.fps:
+            print(f"refresh took {elapsed:.1f} ms (budget {1000 / self.fps:.1f} ms)")
     def refresh_frame(self):
         frame = self.app_manager.get_new_frame()
         # frame = self.app_manager.source_controller.update_frame()
@@ -193,15 +214,6 @@ class RegistrationWindow(QWidget):
         self.app_manager.select_joints()
     def get_joint_selection_map(self):
         self.app_manager.get_joint_selection_map()
-
-    def get_user_input(self):
-        dialog = RegistrationUserInput(self)
-        if not dialog.exec():
-            return False
-        if dialog.action == RecordingAction.REGISTER:
-            self.movement_name = dialog.movement_name
-            self.username = dialog.username
-            self.action = dialog.action
 
     def update_tracking_panel(self):
         joint_states = self.app_manager.get_joint_tracking_states()
@@ -247,6 +259,7 @@ class RegistrationWindow(QWidget):
         if panel != self._last_panel:
             self.text.setHtml(panel)
             self._last_panel = panel
+
     def get_user_input(self):
         dialog = RegistrationUserInput(self)
         if not dialog.exec():
@@ -264,6 +277,16 @@ class RegistrationWindow(QWidget):
         self.movement_name = dialog.movement_name
         self.username = dialog.username
         self.action = dialog.action
+        self.pattern = dialog.pattern
+        self.sample_count = dialog.sample_count
+        self.samples = []
+        self.session_id = None
+        if self.action == RecordingAction.RECREATE:
+            self.session_id = str(uuid4())
+            if not self.app_manager.set_session_joint_selection(self.pattern.joints):
+                QMessageBox.warning(self, "Movement pattern joints",
+                                    f"Movement pattern '{self.movement_name}' has no joint list. "
+                                    "The current joint selection is used.")
         self.update_movement_info()
         return True
 
@@ -271,10 +294,16 @@ class RegistrationWindow(QWidget):
         if self.action == RecordingAction.REGISTER:
             self.movement_label.setText(f"Registering movement: {self.movement_name}")
         elif self.action == RecordingAction.RECREATE:
-            self.movement_label.setText(f"Recreating movement {self.movement_name}, user: {self.username}")
+            current_sample = min(len(self.samples) + 1, self.sample_count)
+            self.movement_label.setText(f"Recreating movement {self.movement_name}, user: {self.username}, "
+                                        f"sample {current_sample}/{self.sample_count}")
         else:
             self.movement_label.setText("")
         self.btn_joint_select.setVisible(self.action == RecordingAction.REGISTER)
+        self.btn_view_pattern.setVisible(self.action == RecordingAction.RECREATE)
+        self.btn_finish.setVisible(self.action == RecordingAction.RECREATE)
+        self.btn_finish.setText(f"Finish ({len(self.samples)}/{self.sample_count})")
+        self.btn_finish.setEnabled(len(self.samples) > 0 and not self._is_recording_active())
 
     def prepare_metadata(self):
         selected_joints = []
@@ -286,20 +315,27 @@ class RegistrationWindow(QWidget):
         else:
             action = None
 
-        return {
+        metadata = {
             "action": action,
             "movement_name": self.movement_name,
             "username": self.username,
             "joints": selected_joints,
         }
+        if self.acton == RecordingAction.RECREATE:
+            metadata["session_id"] = self.session_id
+            metadata["sample_index"] = len(self.samples) + 1
+            metadata["sample_count"] = self.sample_count
+            metadata["pattern_recording_file"] = self.pattern.recording_file
+        return metadata
 
     def handle_recording_finish(self, recording, skeleton_image_recording):
-        if self.action != RecordingAction.REGISTER:
+        if self.action == RecordingAction.REGISTER:
+            QTimer.singleShot(0, lambda: self.review_recording(recording, skeleton_image_recording))
+        elif self.action == RecordingAction.RECREATE:
+            QTimer.singleShot(0, lambda: self.review_sample(recording, skeleton_image_recording))
+        else:
             self.app_manager.save_recording(recording)
             self.app_manager.save_recording(skeleton_image_recording)
-            return
-
-        QTimer.singleShot(0, lambda: self.review_recording(recording, skeleton_image_recording))
 
     def review_recording(self, recording, skeleton_image_recording):
         self.timer.stop()
@@ -318,4 +354,72 @@ class RegistrationWindow(QWidget):
             return
         QMessageBox.information(self, "Movement pattern registered",
                                 f"Movement pattern '{self.movement_name}' has been registered.")
+        self.app_manager.show_menu_window()
+
+    def _is_recording_active(self):
+        return self.app_manager.get_recording_status() in [RecordingState.RECORDING, RecordingState.COUNTING_DOWN]
+
+    def review_sample(self, recording, skeleton_image_recording):
+        sample_number = len(self.samples) + 1
+        self.timer.stop()
+        dialog = MovementPatternPreviewDialog(self.app_manager.skeleton_renderer, skeleton_image_recording,
+                                             self.movement_name, self,
+                                              question=f"Keep this recording as a valid sample?",
+                                              accept_text="Keep sample", reject_text="Record again",
+                                              title="Movement sample preview")
+        accepted = dialog.exec()
+        self.timer.start(1000 // self.fps)
+        if not accepted:
+            self.status_label.setText("Sample discarded.")
+            return
+        self.samples.append((recording, skeleton_image_recording))
+        self.update_movement_info()
+        if len(self.samples) >= self.sample_count:
+            self.finish_session()
+        else:
+            self.status_label.setText(f"Sample {sample_number}/{self.sample_count} recorded."
+                                      f"Press Rec to record the next one.")
+
+    def finish_session(self):
+        if not self.samples or self._is_recording_active():
+            return
+        try:
+            saved_count = self.app_manager.save_movement_samples(self.samples)
+        except OSError as error:
+            QMessageBox.critical(self, "Cannot save movement samples", str(error))
+            return
+        QMessageBox.information(self, "Movement samples saved",
+                                f"{saved_count} sample{saved_count > 0 : 's' ? ''} of movement '{self.movement_name}")
+        self.samples = []
+        self.app_manager.show_menu_window()
+
+    def view_pattern(self):
+        if self.pattern is None or self._is_recording_active():
+            return
+        try:
+            pattern_recording = self.app_manager.load_movement_pattern_recording(self.pattern)
+        except (OSError, ValueError, KeyError) as error:
+            QMessageBox.critical(self, "Cannot load movement pattern", str(error))
+            return
+        self.timer.stop()
+        dialog = MovementPatternPreviewDialog(self.app_manager.skeleton_renderer, pattern_recording,
+                                             self.movement_name, self, question=None, accept_text=None,
+                                              title="Movement pattern")
+        dialog.exec()
+        self.timer.start(1000 // self.fps)
+
+    def go_to_menu_prompted(self):
+        if self.action == RecordingAction.RECREATE and self.samples:
+            answer = QMessageBox.question(
+                self, "Unsaved samples",
+                f"{len(self.samples)} sample{len(self.samples) > 0 : 's' ? ''} have not been saved. Save them before leaving?",
+                QMessageBox.StandardButton.Save | QMessageBox.StandardButton.Discard
+                | QMessageBox.StandardButton.Cancel,
+                QMessageBox.StandardButton.Save)
+            if answer == QMessageBox.StandardButton.Cancel:
+                return
+            if answer == QMessageBox.StandardButton.Save:
+                self.finish_session()
+                return
+            self.samples = []
         self.app_manager.show_menu_window()

@@ -4,6 +4,9 @@ from dataclasses import dataclass, field, fields, asdict
 MIN_FPS = 5
 MAX_FPS = 30
 
+MIN_SAMPLES_PER_SESSION = 1
+MAX_SAMPLES_PER_SESSION = 10
+
 
 @dataclass
 class SourceConfig:
@@ -29,6 +32,7 @@ class RecordingConfig:
     max_missing_seconds: float = 0.5
     min_recording_seconds: float = 1.0
     result_display_seconds: float = 5.0
+    samples_per_session: int = 3
 
 
 @dataclass
@@ -51,6 +55,9 @@ class AppConfig:
                           "Increase still movement duration threshold or sample rate.")
         if not self.recording_config.directory:
             errors.append("No recording directory found. Enter directory path.")
+        if not MIN_SAMPLES_PER_SESSION <= self.recording_config.samples_per_session <= MAX_SAMPLES_PER_SESSION:
+            errors.append(f"Samples per session must be between {MIN_SAMPLES_PER_SESSION} and {MAX_SAMPLES_PER_SESSION}")
+
         return errors
 
 

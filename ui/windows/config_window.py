@@ -1,7 +1,8 @@
 from PyQt6.QtWidgets import QWidget, QCheckBox, QSpinBox, QFormLayout, QLineEdit, QPushButton, QHBoxLayout, \
     QDoubleSpinBox, QVBoxLayout, QGroupBox, QFileDialog, QMessageBox
 
-from application.app_config import MIN_FPS, MAX_FPS, AppConfig, SourceConfig, DisplayConfig, RecordingConfig
+from application.app_config import MIN_FPS, MAX_FPS, AppConfig, SourceConfig, DisplayConfig, RecordingConfig, \
+    MIN_SAMPLES_PER_SESSION, MAX_SAMPLES_PER_SESSION
 
 
 class DoubleInput(QDoubleSpinBox):
@@ -50,6 +51,8 @@ class ConfigWindow(QWidget):
         self.max_missing_seconds = DoubleInput(0.0, 1.0, 0.1, 1, " s")
         self.min_recording_seconds = DoubleInput(1.0, 30.0, 0.5, 1, " s")
         self.result_display_seconds = DoubleInput(0.5, 30.0, 0.5, 1, " s")
+        self.samples_per_session = QSpinBox()
+        self.samples_per_session.setRange(MIN_SAMPLES_PER_SESSION, MAX_SAMPLES_PER_SESSION)
 
         recording = QFormLayout()
         recording.addRow("Recording directory", dir_row)
@@ -63,6 +66,7 @@ class ConfigWindow(QWidget):
         recording.addRow("Time a user could be missing before recording is stopped", self.max_missing_seconds)
         recording.addRow("Minimum recording length", self.min_recording_seconds)
         recording.addRow("Result message duration", self.result_display_seconds)
+        recording.addRow("Default number of samples recorded in one session", self.samples_per_session)
 
         self.movement_activity_detection.toggled.connect(self._update_enabled)
 
@@ -118,6 +122,7 @@ class ConfigWindow(QWidget):
         self.max_missing_seconds.setValue(rec.max_missing_seconds)
         self.min_recording_seconds.setValue(rec.min_recording_seconds)
         self.result_display_seconds.setValue(rec.result_display_seconds)
+        self.samples_per_session.setValue(rec.samples_per_session)
         self._update_enabled()
     def _update_enabled(self):
         is_enabled = self.movement_activity_detection.isChecked()
@@ -151,7 +156,8 @@ class ConfigWindow(QWidget):
                 active_joint_ratio_threshold=self.active_joint_ratio_threshold.value(),
                 max_missing_seconds=self.max_missing_seconds.value(),
                 min_recording_seconds=self.min_recording_seconds.value(),
-                result_display_seconds=self.result_display_seconds.value()
+                result_display_seconds=self.result_display_seconds.value(),
+                samples_per_session=self.samples_per_session.value()
             ),
         joint_selection_map=dict(curr_config.joint_selection_map)
         )

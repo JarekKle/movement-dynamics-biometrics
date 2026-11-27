@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 from datetime import datetime
 from enum import Enum
 
@@ -48,6 +49,7 @@ class AppManager(QWidget):
             self.source = KinectSource()
             self.skeleton_model = KinectSkeletonModel()
         self.joint_selection_map = self._get_joints_map_from_config()
+        self._stored_joint_selection_map = None
         self.setWindowTitle("Movement dynamics biometrics")
 
         self.stack = QStackedWidget()
@@ -132,6 +134,7 @@ class AppManager(QWidget):
         """
         if self._is_recording_active():
             self.recording_controller.cancel_recording()
+        self.restore_joint_selection()
         self.source_controller.source.close()
         self.stack.setCurrentWidget(self.menu_window)
         self._app_state = AppStates.MENU
@@ -140,13 +143,12 @@ class AppManager(QWidget):
         """
         Sets currently displayed window to Movement testing window and changed app's state to AppStates.TESTING
         """
-        self.source_controller.source.open()
-
         if self.movement_testing_window is None:
             self.movement_testing_window = MovementTestingWindow(self)
             self.stack.addWidget(self.movement_testing_window)
         self.stack.setCurrentWidget(self.movement_testing_window)
         self._app_state = AppStates.TESTING
+        self.source_controller.source.open()
 
     def show_registration_window(self):
         """
@@ -157,10 +159,9 @@ class AppManager(QWidget):
             self.stack.addWidget(self.registration_window)
         if not self.registration_window.get_user_input():
             return
-        self.source_controller.source.open()
         self.stack.setCurrentWidget(self.registration_window)
         self._app_state = AppStates.REGISTRATION
-
+        self.source_controller.source.open()
     def show_classification_window(self):
         """
         Sets currently displayed window to Classification window and changed app's state to AppStates.CLASSIFICATION
@@ -243,6 +244,8 @@ class AppManager(QWidget):
     def select_joints(self):
         if self._is_recording_active():
             return
+        if self._stored_joint_selection_map is not None:
+            return
         joint_translation_map = self.skeleton_model.get_joint_translation_map()
         segment_joints_map = self.skeleton_model.get_segment_joints_map()
         dlg = KinectJointSelectionDialog(joint_translation_map, dict(self.joint_selection_map), segment_joints_map)
@@ -318,3 +321,39 @@ class AppManager(QWidget):
         )
         self.movement_pattern_repository.add_pattern(pattern)
         return self.movement_pattern_repository.get_pattern_count()
+
+    def get_movement_patterns(self):
+        return self.movement_pattern_repository.load_patterns()
+
+    def load_movement_pattern_recording(self, pattern):
+        recording_id = os.path.splitext(pattern.image_recording_file)[0]
+        recording = self.recording_repository.load_skeleton_recording(recording_id)
+        if recording is None:
+            raise FileNotFoundError(f"Recording file '{pattern.image_recording_file} does not exist.")
+        return recording
+
+    def set_session_joint_selection(self, joint_names):
+        names = list(joint_names)
+        selection = {}
+        for joint in self.joint_selection_map:
+            selection[joint] = joint.name in names
+        if not any(selection.values()):
+            return False
+        if self._stored_joint_selection_map is None:
+            self._stored_joint_selection_map = dict(self.joint_selection_map)
+        self.joint_selection_map = selection
+        self.source_controller.set_joint_selection_map(self.joint_selection_map)
+        return True
+
+    def restore_joint_selection(self):
+        if self._stored_joint_selection_map is None:
+            return
+        self.joint_selection_map = self._stored_joint_selection_map
+        self._stored_joint_selection_map = None
+        self.source_controller.set_joint_selection_map(self.joint_selection_map)
+
+    def save_movement_samples(self, samples):
+        for recording, skeleton_image_recording in samples:
+            self.save_recording(recording)
+            self.save_recording(skeleton_image_recording)
+        return len(samples)
