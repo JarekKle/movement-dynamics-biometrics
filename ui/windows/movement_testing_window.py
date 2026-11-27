@@ -205,7 +205,7 @@ class MovementTestingWindow(QWidget):
         self.refresh_frame()
         self.update_cords_label()
     def refresh_frame(self):
-        frame = self.app_manager.get_new_frame()
+        frame = self.app_manager.get_new_frame(self.image_label.get_target_size())
         # frame = self.app_manager.source_controller.update_frame()
         if frame is not None:
             self.image_label.refresh_frame(frame)

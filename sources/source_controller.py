@@ -75,27 +75,29 @@ class SourceController:
             time.time(),
             joint_positions
         )
-    def get_display_frame(self):
+    def get_display_frame(self, target_size=None):
         self.get_new_frame()
         frame = self.skeleton_renderer.render_body_frame(
             frame=self._frame,
+            target_size=target_size
         )
         return frame
-    def get_display_frame_with_skeleton(self):
+    def get_display_frame_with_skeleton(self, target_size=None):
         self.get_new_frame()
         self.get_joints_data()
         frame = self.skeleton_renderer.render(
             frame=self._frame,
             joints2d=self._joints2d,
-            joint_selection_map=self.joint_selection_map
+            joint_selection_map=self.joint_selection_map,
+            target_size=target_size
         )
         return frame
-    def update_frame(self, dynamic_tracking: bool):
+    def update_frame(self, dynamic_tracking: bool, target_size=None):
         if self.source.is_opened() and self.source.is_running():
             if dynamic_tracking:
-                new_frame = self.get_display_frame_with_skeleton()
+                new_frame = self.get_display_frame_with_skeleton(target_size)
             else:
-                new_frame = self.get_display_frame()
+                new_frame = self.get_display_frame(target_size)
             return new_frame
     def get_joints_raw(self):
         return self._joints_raw

@@ -58,7 +58,7 @@ class RegistrationWindow(QWidget):
         self.generate_tracking_state_panel()
         self.generate_status_label()
         self.btn_menu = QPushButton("Menu Window")
-        self.btn_menu.clicked.connect(self.app_manager.show_menu_window)
+        self.btn_menu.clicked.connect(self.go_to_menu_prompted)
 
         self.layout.addWidget(self.btn_menu)
 
@@ -173,7 +173,7 @@ class RegistrationWindow(QWidget):
         if elapsed > 1000 / self.fps:
             print(f"refresh took {elapsed:.1f} ms (budget {1000 / self.fps:.1f} ms)")
     def refresh_frame(self):
-        frame = self.app_manager.get_new_frame()
+        frame = self.app_manager.get_new_frame(self.image_label.get_target_size())
         # frame = self.app_manager.source_controller.update_frame()
         if frame is not None:
             self.image_label.refresh_frame(frame)

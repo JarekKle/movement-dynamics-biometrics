@@ -186,13 +186,13 @@ class AppManager(QWidget):
             self.stack.addWidget(self.config_window)
         self.stack.setCurrentWidget(self.config_window)
         self._app_state = AppStates.CONFIG
-    def get_new_frame(self):
+    def get_new_frame(self, target_size=None):
         """
         Receives new frame from a source controller and passes it to recording controller, if currently recording.
         :return: New color frame received from source controller.
         :rtype: ndarray
         """
-        new_frame = self.source_controller.update_frame(self.config.source_config.dynamic_tracking)
+        new_frame = self.source_controller.update_frame(self.config.source_config.dynamic_tracking, target_size)
         if self.recording_controller.is_recording():
             body = self.source_controller.get_joints_as_skeleton_frame()
             if not self.config.source_config.dynamic_tracking:

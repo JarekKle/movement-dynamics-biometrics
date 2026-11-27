@@ -11,6 +11,8 @@ class SkeletonPlaybackPlayer(QObject):
         self.skeleton_renderer = skeleton_renderer
         self.fps = fps
         self.loop_pause_seconds = loop_pause_seconds
+        self.frame_width = 960
+        self.frame_height = 540
         self._frames = []
         self._sample_rate = 1.0
         self._time = 0.0
@@ -58,7 +60,8 @@ class SkeletonPlaybackPlayer(QObject):
                 point.x + (next_point.x - point.x) * ratio,
                 point.y + (next_point.y - point.y) * ratio
             )
-        self.frame_ready.emit(self.skeleton_renderer.render_on_black_frame(joints))
+        self.frame_ready.emit(self.skeleton_renderer.render_on_black_frame(joints, width=self.frame_width,
+                                                                           height=self.frame_height))
 
     @staticmethod
     def _to_joint_dict(frame):
