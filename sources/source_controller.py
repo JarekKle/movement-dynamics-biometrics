@@ -10,6 +10,7 @@ from sources.tracking_status import TrackingStatus
 
 class SourceController:
     def __init__(self, source: ISource, skeleton_renderer: ISkeletonRenderer, dynamic_tracking: bool, allow_inferred: bool, joint_selection_map):
+        self.joint_selection_map = None
         self._joints2d = None
         self._joints_raw = None
         self._body = None
@@ -99,6 +100,8 @@ class SourceController:
             else:
                 new_frame = self.get_display_frame(target_size)
             return new_frame
+        return None
+
     def get_joints_raw(self):
         return self._joints_raw
 

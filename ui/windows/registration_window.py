@@ -14,6 +14,7 @@ from sources.tracking_status import TrackingStatus
 from ui.camera_label import CameraLabel
 from ui.movement_pattern_preview_dialog import MovementPatternPreviewDialog
 from ui.registration_user_input import RegistrationUserInput
+from ui.status_overlay import StatusOverlay
 
 
 class RegistrationWindow(QWidget):
@@ -106,7 +107,7 @@ class RegistrationWindow(QWidget):
         self.image_label.setMinimumSize(320, 180)
         self.image_label.setSizePolicy(QSizePolicy.Policy.Ignored, QSizePolicy.Policy.Ignored)
         content_layout.addWidget(self.image_label, stretch=3)
-
+        self.status_overlay = StatusOverlay(self.image_label)
         self.features_container = content_layout
         self.layout.addLayout(content_layout, stretch=1)
 
@@ -169,6 +170,7 @@ class RegistrationWindow(QWidget):
         start = time.perf_counter()
         self.refresh_frame()
         self.update_tracking_panel()
+        self.update_status_overlay()
         elapsed = (time.perf_counter() - start) * 1000
         if elapsed > 1000 / self.fps:
             print(f"refresh took {elapsed:.1f} ms (budget {1000 / self.fps:.1f} ms)")
@@ -321,7 +323,7 @@ class RegistrationWindow(QWidget):
             "username": self.username,
             "joints": selected_joints,
         }
-        if self.acton == RecordingAction.RECREATE:
+        if self.action == RecordingAction.RECREATE:
             metadata["session_id"] = self.session_id
             metadata["sample_index"] = len(self.samples) + 1
             metadata["sample_count"] = self.sample_count
@@ -423,3 +425,14 @@ class RegistrationWindow(QWidget):
                 return
             self.samples = []
         self.app_manager.show_menu_window()
+    def update_status_overlay(self):
+        self.status_overlay.show_status(self.app_manager.get_last_tracking_status(),
+                                        self.app_manager.get_recording_status(),
+                                        self.app_manager.get_recording_countdown_seconds())
+
+    def hideEvent(self, a0):
+        self.timer.stop()
+        self.status_timer.stop()
+    def showEvent(self, a0):
+        self.timer.start()
+        self.status_timer.start()

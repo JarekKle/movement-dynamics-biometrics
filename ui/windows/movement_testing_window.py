@@ -11,6 +11,7 @@ from PyQt6.QtWidgets import QWidget, QPushButton, QVBoxLayout, QLabel
 from domain.recording.recording_state import RecordingState
 from sources.tracking_status import TrackingStatus
 from ui.camera_label import CameraLabel
+from ui.status_overlay import StatusOverlay
 
 
 class MeasurementTypes(Enum):
@@ -134,6 +135,7 @@ class MovementTestingWindow(QWidget):
         self.image_label.setMinimumSize(320, 180)
         self.image_label.setSizePolicy(QSizePolicy.Policy.Ignored, QSizePolicy.Policy.Ignored)
         content_layout.addWidget(self.image_label, stretch=3)
+        self.status_overlay = StatusOverlay(self.image_label)
 
         self.features_container = content_layout
         self.layout.addLayout(content_layout, stretch=1)
@@ -204,6 +206,7 @@ class MovementTestingWindow(QWidget):
     def refresh(self):
         self.refresh_frame()
         self.update_cords_label()
+        self.update_status_overlay()
     def refresh_frame(self):
         frame = self.app_manager.get_new_frame(self.image_label.get_target_size())
         # frame = self.app_manager.source_controller.update_frame()
@@ -288,3 +291,15 @@ class MovementTestingWindow(QWidget):
         #         self.set_display_mode(MeasurementTypes.CORDS_M)
         #     elif right_hand_up:
         #         self.set_display_mode(MeasurementTypes.ANGLES)
+
+    def update_status_overlay(self):
+        self.status_overlay.show_status(self.app_manager.get_last_tracking_status(),
+                                        self.app_manager.get_recording_status(),
+                                        self.app_manager.get_recording_countdown_seconds())
+
+    def hideEvent(self, a0):
+        self.timer.stop()
+        self.status_timer.stop()
+    def showEvent(self, a0):
+        self.timer.start()
+        self.status_timer.start()
