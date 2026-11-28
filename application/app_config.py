@@ -23,7 +23,7 @@ class DisplayConfig:
 @dataclass
 class RecordingConfig:
     directory: str = "recordings"
-    sample_rate: float = 5.0
+    sample_rate: float = 15.0
     countdown_seconds: int = 5
     movement_activity_detection: bool = True
     still_movement_duration_threshold: float = 2.0
