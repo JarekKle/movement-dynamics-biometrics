@@ -96,8 +96,11 @@ class RecordingController(QObject):
         if not self.is_frame_time_valid():
             return
         time_diff = time.time() - self.start_time
-        self.next_sample_time = time_diff + ( 1.0 / self.sample_rate)
-
+        if self.next_sample_time == 0:
+            self.next_sample_time = time_diff
+        self.next_sample_time += 1.0 / self.sample_rate
+        if self.next_sample_time < time_diff:
+            self.next_sample_time = time_diff + 1.0 / self.sample_rate
         self.add_frame(frame)
         self.add_image_frame(joints_2d)
         if self.movement_activity_detection:
