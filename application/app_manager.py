@@ -4,7 +4,7 @@ import os
 from datetime import datetime
 from enum import Enum
 
-from PyQt6.QtWidgets import QStackedWidget, QWidget, QVBoxLayout
+from PyQt6.QtWidgets import QStackedWidget, QWidget, QVBoxLayout, QMessageBox
 
 from application.app_config import ConfigRepository, AppConfig
 from application.movement_pattern_repository import MovementPatternRepository
@@ -100,9 +100,12 @@ class AppManager(QWidget):
         if self._app_state == AppStates.REGISTRATION and self.registration_window is not None:
             self.registration_window.handle_recording_finish(recording, skeleton_image_recording)
             return
-        self.save_recording(recording)
-        if skeleton_image_recording is not None:
-            self.save_recording(skeleton_image_recording)
+        try:
+            self.save_recording(recording)
+            if skeleton_image_recording is not None:
+                self.save_recording(skeleton_image_recording)
+        except OSError as error:
+            QMessageBox.critical(self, "Error occurred. Unable to save files.", str(error))
 
     def save_recording(self, recording=None):
         """
@@ -237,6 +240,9 @@ class AppManager(QWidget):
     def close_source(self):
         self.source_controller.source.close()
 
+    def get_last_tracking_status(self):
+        return self.source_controller.get_tracking_status()
+
     def get_tracking_status(self):
         self.source_controller.determine_tracking_status()
         return self.source_controller.get_tracking_status()
@@ -255,7 +261,10 @@ class AppManager(QWidget):
             self.config.joint_selection_map = {}
             for joint, selected in self.joint_selection_map.items():
                 self.config.joint_selection_map[joint.name] = selected
-            self.config_repository.save(self.config)
+            try:
+                self.config_repository.save(self.config)
+            except OSError as error:
+                QMessageBox.critical(self, "Cannot save movement samples", str(error))
     def get_fps_range(self):
         return [self.source_controller.min_fps, self.source_controller.max_fps]
 

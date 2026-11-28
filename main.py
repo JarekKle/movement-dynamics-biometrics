@@ -9,6 +9,12 @@ from sources.source_registry import SourceRegistry
 from application.app_manager import AppManager
 from ui.theme import apply_dark_theme
 
+import traceback
+from PyQt6.QtWidgets import QMessageBox
+
+def handle_exception(exc_type, exc_value, exc_tb):
+    traceback.print_exception(exc_type, exc_value, exc_tb)
+    QMessageBox.critical(None, "Unexpected error", f"{exc_type.__name__}: {exc_value}")
 
 def start_kinect():
     kinect = KinectSource()
@@ -34,6 +40,7 @@ def start_window():
     window = AppManager(ConfigRepository("config.json"))
     window.show()
     window.showMaximized()
+    sys.excepthook = handle_exception
     app.exec()
 
 
