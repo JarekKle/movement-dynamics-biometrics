@@ -18,9 +18,6 @@ class KinectSource(ISource):
         )
         # do usunięcia
         self._joint_cords = {}
-        self._joint_cords_normalized = {}
-        self._angles = {}
-        # koniec
         self._last_body_frame = None
         self._last_color_frame = None
         self.joint_selection_map = None
@@ -35,12 +32,12 @@ class KinectSource(ISource):
     def configure(self, **kwargs):
         if "frame_types" in kwargs:
             self.frame_types = kwargs["frame_types"]
+
     def open(self):
-        if self._running:
+        if self.is_opened():
+            self.start()
             return
-        self._kinect = PyKinectRuntime.PyKinectRuntime(
-            self.frame_types
-        )
+        self._kinect = PyKinectRuntime.PyKinectRuntime(self.frame_types)
         self.start()
 
     def close(self):
@@ -91,9 +88,12 @@ class KinectSource(ISource):
         return self._last_body_frame
 
     def update(self):
-        if self.is_available():
-            self.read_color()
-            self.read_body()
+        if not self.is_available():
+            self._last_body_frame = None
+            self._last_color_frame = None
+            return
+        self.read_color()
+        self.read_body()
 
     def joint_xyz(self, joint):
         return np.array([
@@ -144,50 +144,6 @@ class KinectSource(ISource):
                 joints = body.joints
                 joint_points = self._kinect.body_joints_to_color_space(joints)
                 return joint_points
-    def update_joint_cords(self):
-        if not self.is_opened() or not self.is_running():
-            return
-        if self._last_body_frame is not None:
-            for i in range(self._kinect.max_body_count):
-
-                body = self._last_body_frame.bodies[i]
-
-                if not body.is_tracked:
-                    continue
-                joints = body.joints
-
-                for joint in KinectJoints.get_joints():
-                    x = joints[joint].Position.x
-                    y = joints[joint].Position.y
-                    z = joints[joint].Position.z
-                    self._joint_cords[joint] = self.joint_xyz(joints[joint])
 
     def get_joint_cords(self):
         return self._joint_cords
-
-    def get_joint_cords_normalized(self):
-        return self._joint_cords_normalized
-
-    def get_angles(self):
-        return self._angles
-
-
-
-    # do usunięcia
-    def joint_in_range(self, joint, x, y, z, x_range, y_range, z_range):
-
-        self.update_joint_cords()
-        self.normalize_joints_by_shoulder_distance()
-
-        joint_xyz = self._joint_cords_normalized.get(joint)
-
-        if joint_xyz is None:
-            return False
-
-        target = np.array([x, y, z])
-        margin = np.array([x_range, y_range, z_range])
-
-        diff = np.abs(joint_xyz - target)
-
-        return np.all(diff <= margin)
-
