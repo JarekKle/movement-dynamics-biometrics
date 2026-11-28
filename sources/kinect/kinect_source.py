@@ -147,3 +147,21 @@ class KinectSource(ISource):
 
     def get_joint_cords(self):
         return self._joint_cords
+
+    def update_joint_cords(self):
+        if not self.is_opened() or not self.is_running():
+            return
+        if self._last_body_frame is not None:
+            for i in range(self._kinect.max_body_count):
+
+                body = self._last_body_frame.bodies[i]
+
+                if not body.is_tracked:
+                    continue
+                joints = body.joints
+
+                for joint in KinectJoints.get_joints():
+                    x = joints[joint].Position.x
+                    y = joints[joint].Position.y
+                    z = joints[joint].Position.z
+                    self._joint_cords[joint] = self.joint_xyz(joints[joint])
